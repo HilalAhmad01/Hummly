@@ -1,0 +1,16 @@
+{
+  "name": "SwaraGuess — Bollywood Music Trivia",
+  "short_name": "SwaraGuess",
+  "description": "Guess iconic Bollywood songs in 15 seconds! Fast autocomplete, streaks, and leaderboards.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070A12",
+  "theme_color": "#10B981",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
