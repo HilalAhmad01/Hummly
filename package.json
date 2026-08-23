@@ -1,0 +1,43 @@
+{
+  "name": "swaraguess",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "catalog:songs": "npx tsx scripts/catalog-songs.ts",
+    "catalog:test": "npx tsx scripts/catalog-songs.ts --test",
+    "db:import": "npx tsx scripts/import-songs.ts",
+    "catalog:validate": "npx tsx scripts/validate-catalog.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "type": "module",
+  "dependencies": {
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.3",
+    "canvas-confetti": "^1.9.4",
+    "clsx": "^2.1.1",
+    "fuse.js": "^7.5.0",
+    "lucide-react": "^1.33.0",
+    "next": "^16.3.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "autoprefixer": "^10.5.4",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2"
+  }
+}
