@@ -134,23 +134,11 @@ export default function ProfilePage() {
       return;
     }
 
-    setEditStatus({ type: 'loading', message: 'Checking availability...' });
+    setEditStatus({ type: 'loading', message: 'Saving username...' });
 
     const supabase = createClient();
     if (supabase && user && isSupabaseConfigured) {
       try {
-        // Check uniqueness in profiles table
-        const { data: existingUser } = await (supabase.from('profiles') as any)
-          .select('id')
-          .ilike('username', clean)
-          .neq('id', user.id)
-          .maybeSingle();
-
-        if (existingUser) {
-          setEditStatus({ type: 'error', message: `"${clean}" is already taken. Please choose another!` });
-          return;
-        }
-
         // Update profile in DB
         const { error: updateError } = await (supabase.from('profiles') as any)
           .update({ username: clean })
@@ -169,7 +157,7 @@ export default function ProfilePage() {
         setTimeout(() => {
           setIsEditingUsername(false);
           setEditStatus({ type: null });
-        }, 1200);
+        }, 1000);
       } catch (err: unknown) {
         setEditStatus({
           type: 'error',
@@ -185,7 +173,7 @@ export default function ProfilePage() {
       setTimeout(() => {
         setIsEditingUsername(false);
         setEditStatus({ type: null });
-      }, 1200);
+      }, 1000);
     }
   };
 
@@ -252,7 +240,7 @@ export default function ProfilePage() {
             {isEditingUsername ? (
               <div className="flex flex-col gap-2">
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  Edit Unique Username
+                  Edit Username
                 </span>
                 <div className="flex items-center gap-2">
                   <input
@@ -260,7 +248,7 @@ export default function ProfilePage() {
                     value={editInput}
                     onChange={(e) => setEditInput(e.target.value)}
                     maxLength={20}
-                    placeholder="Enter unique username"
+                    placeholder="Enter your username"
                     autoFocus
                     className="w-full px-3 py-2 rounded-xl bg-[#060A08] border border-[#00E575]/60 text-white font-bold text-sm focus:outline-none"
                   />
@@ -306,7 +294,7 @@ export default function ProfilePage() {
                     onClick={handleStartEdit}
                     aria-label="Edit Username"
                     className="p-1.5 rounded-lg text-slate-400 hover:text-[#00E575] hover:bg-white/5 transition-colors cursor-pointer"
-                    title="Edit unique username"
+                    title="Edit username"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
@@ -318,7 +306,7 @@ export default function ProfilePage() {
 
                 <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 mt-2 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
                   <ShieldCheck className="w-3 h-3 text-[#00E575]" />
-                  <span>Unique Display Name</span>
+                  <span>Display Name</span>
                 </span>
               </div>
             )}
