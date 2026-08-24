@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { Film, User, Music, ArrowRight } from 'lucide-react';
 import { GameRoundState } from '@/types/game';
+import { getOptimizedCoverUrl } from '@/lib/image-utils';
 
 interface RoundRevealProps {
   roundState: GameRoundState;
@@ -20,6 +20,7 @@ function RoundReveal({
   const [imgError, setImgError] = useState(false);
   const song = roundState.song;
   const isCorrect = roundState.isCorrect;
+  const optimizedCover = getOptimizedCoverUrl(song.cover_url);
 
   // Reset img error on round change
   useEffect(() => {
@@ -63,15 +64,13 @@ function RoundReveal({
       <div className="flex flex-col sm:flex-row items-center gap-4 my-2 max-w-sm w-full text-left">
         {/* Cover Art */}
         <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden shadow-xl border border-white/10 flex-shrink-0 bg-[#080D0A] flex items-center justify-center">
-          {song.cover_url && !imgError ? (
-            <Image
-              src={song.cover_url}
+          {optimizedCover && !imgError ? (
+            <img
+              src={optimizedCover}
               alt={song.title}
-              fill
-              sizes="120px"
-              className="object-cover"
+              className="w-full h-full object-cover transition-opacity duration-300"
               onError={() => setImgError(true)}
-              unoptimized
+              loading="eager"
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-[#00E575] p-2 text-center">

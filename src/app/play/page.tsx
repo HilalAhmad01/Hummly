@@ -17,6 +17,7 @@ import { CURATED_BOLLYWOOD_SONGS } from '@/lib/mock-data';
 import { isGuessCorrect } from '@/lib/search-engine';
 import { calculateStageScore, getStreakMultiplierText } from '@/lib/scoring';
 import { soundFX } from '@/lib/sound-effects';
+import { preloadImage } from '@/lib/image-utils';
 
 import AudioPlayer, { AudioPlayerHandle } from '@/components/game/AudioPlayer';
 import SnippetProgressTrack from '@/components/game/SnippetProgressTrack';
@@ -166,6 +167,19 @@ function PlayGameContent() {
   useEffect(() => {
     initGame(eraParam);
   }, [eraParam, initGame]);
+
+  // Preload album artwork in the background while player is listening
+  useEffect(() => {
+    if (playlist.length === 0) return;
+    const currentSong = playlist[currentRoundIndex];
+    if (currentSong?.cover_url) {
+      preloadImage(currentSong.cover_url);
+    }
+    const nextSong = playlist[currentRoundIndex + 1];
+    if (nextSong?.cover_url) {
+      preloadImage(nextSong.cover_url);
+    }
+  }, [currentRoundIndex, playlist]);
 
   // Handle Switching / Unlocking Stage Directly via Pill or Timeline Click
   const handleSelectStage = useCallback((targetStageIndex: number) => {

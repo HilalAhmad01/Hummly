@@ -10,6 +10,7 @@ import {
 import { isGuessCorrect } from '@/lib/search-engine';
 import { calculateStageScore, getStreakMultiplierText } from '@/lib/scoring';
 import { soundFX } from '@/lib/sound-effects';
+import { getOptimizedCoverUrl, preloadImage } from '@/lib/image-utils';
 import AudioPlayer, { AudioPlayerHandle } from '@/components/game/AudioPlayer';
 import SongSearchBar from '@/components/game/SongSearchBar';
 import SnippetProgressTrack from '@/components/game/SnippetProgressTrack';
@@ -100,12 +101,20 @@ export default function MultiplayerArena({
     return () => clearInterval(timer);
   }, [isRevealing, isHost]);
 
-  // Reset local round state on round change
+  // Reset local round state on round change & preload cover artwork
   useEffect(() => {
     setCurrentStageIndex(0);
     setCurrentAudioProgressTime(0);
     setIsPlayingAudio(true);
-  }, [room.currentRound]);
+
+    if (currentSong?.cover_url) {
+      preloadImage(currentSong.cover_url);
+    }
+    const nextSong = room.playlist[room.currentRound];
+    if (nextSong?.cover_url) {
+      preloadImage(nextSong.cover_url);
+    }
+  }, [room.currentRound, currentSong?.cover_url, room.playlist]);
 
   // Handle stage switch
   const handleSelectStage = useCallback((targetStageIndex: number) => {
@@ -273,8 +282,13 @@ export default function MultiplayerArena({
 
           {/* Song Cover & Details */}
           <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden shadow-2xl border border-white/10 mb-4 bg-slate-900 flex items-center justify-center">
-            {currentSong.cover_url ? (
-              <img src={currentSong.cover_url} alt={currentSong.title} className="w-full h-full object-cover" />
+            {getOptimizedCoverUrl(currentSong.cover_url) ? (
+              <img
+                src={getOptimizedCoverUrl(currentSong.cover_url)!}
+                alt={currentSong.title}
+                className="w-full h-full object-cover"
+                loading="eager"
+              />
             ) : (
               <div className="font-black text-2xl text-[#00E575]">
                 {currentSong.title.charAt(0)}
