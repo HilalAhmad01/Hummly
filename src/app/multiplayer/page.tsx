@@ -207,13 +207,15 @@ function MultiplayerContent() {
   // Handler: Toggle Ready
   const handleToggleReady = () => {
     if (!activeRoom || !currentUser) return;
-    togglePlayerReadyState(activeRoom, currentUser.id);
+    const updated = togglePlayerReadyState(activeRoom, currentUser.id);
+    setActiveRoom(updated);
   };
 
   // Handler: Start Match (Host only)
   const handleStartGame = () => {
     if (!activeRoom) return;
-    startMultiplayerGame(activeRoom);
+    const updated = startMultiplayerGame(activeRoom);
+    setActiveRoom(updated);
   };
 
   // Handler: Submit Guess
@@ -224,7 +226,7 @@ function MultiplayerContent() {
     guessTitle: string
   ) => {
     if (!activeRoom || !currentUser) return;
-    submitMultiplayerGuess({
+    const updated = submitMultiplayerGuess({
       room: activeRoom,
       userId: currentUser.id,
       stageIndex,
@@ -232,18 +234,21 @@ function MultiplayerContent() {
       scoreAwarded,
       guessTitle,
     });
+    setActiveRoom(updated);
   };
 
   // Handler: Advance Round
   const handleAdvanceRound = () => {
     if (!activeRoom) return;
-    advanceToNextMultiplayerRound(activeRoom);
+    const updated = advanceToNextMultiplayerRound(activeRoom);
+    setActiveRoom(updated);
   };
 
   // Handler: Play Again (Same Room)
   const handlePlayAgain = () => {
     if (!activeRoom) return;
-    resetMultiplayerGameToLobby(activeRoom);
+    const updated = resetMultiplayerGameToLobby(activeRoom);
+    setActiveRoom(updated);
   };
 
   // Handler: Leave Room
