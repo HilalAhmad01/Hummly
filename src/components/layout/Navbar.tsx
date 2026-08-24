@@ -82,29 +82,29 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-[#060A08]/90 backdrop-blur-md border-b border-white/5">
-      <div className="max-w-md sm:max-w-xl md:max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
         {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
+        <Link href="/" className="flex items-center gap-2 group shrink-0">
           <div className="flex items-center justify-center text-[#00E575] group-hover:scale-110 transition-transform">
             <svg
-              className="w-7 h-7 fill-current"
+              className="w-6 h-6 sm:w-7 sm:h-7 fill-current"
               viewBox="0 0 24 24"
               xmlns="http://www.w3.org/2000/svg"
             >
               <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
             </svg>
           </div>
-          <span className="font-black text-2xl tracking-tight text-[#00E575]">
+          <span className="font-black text-xl sm:text-2xl tracking-tight text-[#00E575]">
             Hummly
           </span>
         </Link>
 
         {/* Action Controls & Navigation */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Solo Play Link */}
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          {/* Solo Play Link (Desktop Only to save mobile space) */}
           <Link
             href="/play"
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`hidden md:flex px-3 py-1.5 rounded-full text-xs font-bold transition-all items-center gap-1.5 ${
               pathname === '/play'
                 ? 'bg-[#00E575] text-[#060A08]'
                 : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -112,21 +112,21 @@ export default function Navbar() {
             title="Solo Quick Play"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
-            <span className="hidden sm:inline">Solo</span>
+            <span>Solo</span>
           </Link>
 
           {/* Multiplayer Link */}
           <Link
             href="/multiplayer"
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
               pathname?.startsWith('/multiplayer')
                 ? 'bg-[#00E575] text-[#060A08] shadow-[0_0_15px_rgba(0,229,117,0.3)]'
                 : 'text-[#00E575] bg-[#00E575]/10 border border-[#00E575]/20 hover:bg-[#00E575]/20'
             }`}
             title="Play With Friends (Multiplayer)"
           >
-            <Users className="w-3.5 h-3.5" />
-            <span>Multiplayer</span>
+            <Users className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+            <span className="hidden sm:inline">Multiplayer</span>
           </Link>
 
           {/* Leaderboard Link */}
@@ -161,31 +161,31 @@ export default function Navbar() {
           {user ? (
             <Link
               href="/profile"
-              className={`flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-full border transition-all ${
+              className={`flex items-center gap-2 p-1 sm:pl-1.5 sm:pr-3 sm:py-1 rounded-full border transition-all ${
                 pathname === '/profile'
                   ? 'bg-[#18231E] border-[#00E575] text-[#00E575]'
                   : 'bg-[#111714] border-white/10 hover:border-[#00E575]/50 text-slate-200'
               }`}
               title={`Profile: ${username}`}
             >
-              <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-800 flex items-center justify-center font-black text-xs text-[#00E575] border border-white/10 shrink-0">
+              <div className="w-7 h-7 sm:w-6 sm:h-6 rounded-full overflow-hidden bg-slate-800 flex items-center justify-center font-black text-xs text-[#00E575] border border-white/10 shrink-0">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <span>{username ? username.charAt(0).toUpperCase() : 'U'}</span>
                 )}
               </div>
-              <span className="text-xs font-bold truncate max-w-[85px] sm:max-w-[110px]">
+              <span className="hidden sm:inline text-xs font-bold truncate max-w-[100px]">
                 {username}
               </span>
             </Link>
           ) : (
             <Link
               href="/login"
-              className="px-3.5 py-1.5 rounded-full bg-[#00E575] text-[#060A08] font-bold text-xs shadow-sm hover:bg-[#00F77F] transition-all flex items-center gap-1.5"
+              className="px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-full bg-[#00E575] text-[#060A08] font-bold text-xs shadow-sm hover:bg-[#00F77F] transition-all flex items-center gap-1.5 shrink-0"
             >
               <LogIn className="w-3.5 h-3.5" />
-              <span>Sign In</span>
+              <span className="hidden xs:inline">Sign In</span>
             </Link>
           )}
         </div>
