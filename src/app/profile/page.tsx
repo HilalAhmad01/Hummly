@@ -13,14 +13,17 @@ import {
   AlertCircle,
   Sparkles,
   Users,
+  ShieldCheck,
+  Lock,
 } from 'lucide-react';
 import { GameSessionSummary } from '@/types/game';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { soundFX } from '@/lib/sound-effects';
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<{ email?: string; id?: string; user_metadata?: { username?: string; avatar_url?: string } } | null>(null);
+  const [user, setUser] = useState<{ email?: string; id?: string; user_metadata?: { username?: string; avatar_url?: string; picture?: string } } | null>(null);
   const [username, setUsername] = useState<string>('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isEditingUsername, setIsEditingUsername] = useState<boolean>(false);
   const [editInput, setEditInput] = useState<string>('');
   const [editStatus, setEditStatus] = useState<{ type: 'success' | 'error' | 'loading' | null; message?: string }>({ type: null });
@@ -37,20 +40,22 @@ export default function ProfilePage() {
       supabase.auth.getUser().then(async ({ data }) => {
         if (data.user) {
           setUser(data.user);
+          let currentUsername = data.user.user_metadata?.username || data.user.email?.split('@')[0] || 'Player';
+          let currentAvatar = data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture || null;
 
           // Fetch profile from database
           try {
             const { data: profile } = await (supabase.from('profiles') as any)
-              .select('username, total_score, games_played')
+              .select('username, avatar_url, total_score, games_played')
               .eq('id', data.user.id)
               .single();
 
             if (profile?.username) {
-              setUsername(profile.username);
-            } else {
-              setUsername(data.user.email?.split('@')[0] || 'Player');
+              currentUsername = profile.username;
             }
-
+            if (profile?.avatar_url) {
+              currentAvatar = profile.avatar_url;
+            }
             if (profile?.total_score) {
               setTotalScore(Number(profile.total_score));
             }
@@ -58,8 +63,11 @@ export default function ProfilePage() {
               setTotalGames(Number(profile.games_played));
             }
           } catch {
-            setUsername(data.user.email?.split('@')[0] || 'Player');
+            // fallback to auth data
           }
+
+          setUsername(currentUsername);
+          setAvatarUrl(currentAvatar);
         } else {
           const guestName = localStorage.getItem('hummly_guest_name') || 'Guest_Player';
           setUsername(guestName);
@@ -139,7 +147,7 @@ export default function ProfilePage() {
           .maybeSingle();
 
         if (existingUser) {
-          setEditStatus({ type: 'error', message: `"${clean}" is already taken. Try another!` });
+          setEditStatus({ type: 'error', message: `"${clean}" is already taken. Please choose another!` });
           return;
         }
 
@@ -187,12 +195,13 @@ export default function ProfilePage() {
       await supabase.auth.signOut();
       setUser(null);
       setUsername('Guest_Player');
+      setAvatarUrl(null);
     }
   };
 
   return (
     <div className="w-full max-w-md sm:max-w-lg mx-auto px-4 py-6 flex flex-col items-center">
-      {/* Top Bar */}
+      {/* Top Navigation */}
       <div className="w-full flex items-center justify-between mb-6">
         <Link
           href="/"
@@ -220,20 +229,31 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* User Profile Card with Editable Unique Username */}
-      <div className="w-full bg-[#111714] border border-white/5 rounded-3xl p-5 sm:p-6 flex flex-col gap-4 mb-6 shadow-lg">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-[#18231E] border border-[#00E575]/40 flex items-center justify-center text-xl font-black text-[#00E575] shadow-[0_0_15px_rgba(0,229,117,0.15)] overflow-hidden shrink-0">
-            {user?.user_metadata?.avatar_url ? (
-              <img src={user.user_metadata.avatar_url} alt="" className="w-full h-full object-cover" />
-            ) : (
-              username.charAt(0).toUpperCase()
-            )}
+      {/* User Profile Card (View PFP & Edit Unique Username) */}
+      <div className="w-full bg-[#111714] border border-white/5 rounded-3xl p-5 sm:p-6 flex flex-col gap-5 mb-6 shadow-xl">
+        <div className="flex items-start gap-4">
+          {/* Read-Only Profile Picture (PFP) */}
+          <div className="relative flex flex-col items-center shrink-0">
+            <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-[#18231E] border-2 border-[#00E575]/40 flex items-center justify-center text-2xl font-black text-[#00E575] shadow-[0_0_20px_rgba(0,229,117,0.2)] overflow-hidden">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="PFP" className="w-full h-full object-cover" />
+              ) : (
+                username.charAt(0).toUpperCase()
+              )}
+            </div>
+            <div className="mt-1 flex items-center gap-1 text-[10px] text-slate-500 font-bold">
+              <Lock className="w-2.5 h-2.5" />
+              <span>PFP</span>
+            </div>
           </div>
 
-          <div className="min-w-0 flex-1">
+          {/* User Details & Editable Unique Username */}
+          <div className="min-w-0 flex-1 pt-1">
             {isEditingUsername ? (
               <div className="flex flex-col gap-2">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  Edit Unique Username
+                </span>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -242,19 +262,19 @@ export default function ProfilePage() {
                     maxLength={20}
                     placeholder="Enter unique username"
                     autoFocus
-                    className="w-full px-3 py-1.5 rounded-xl bg-[#060A08] border border-[#00E575]/50 text-white font-bold text-sm focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-[#060A08] border border-[#00E575]/60 text-white font-bold text-sm focus:outline-none"
                   />
                   <button
                     onClick={handleSaveUsername}
                     disabled={editStatus.type === 'loading'}
-                    className="p-2 rounded-xl bg-[#00E575] text-[#060A08] font-bold cursor-pointer hover:scale-105 transition-transform"
+                    className="p-2.5 rounded-xl bg-[#00E575] hover:bg-[#00F77F] text-[#060A08] font-bold cursor-pointer hover:scale-105 transition-transform shrink-0"
                     title="Save Username"
                   >
                     <Check className="w-4 h-4" />
                   </button>
                   <button
                     onClick={handleCancelEdit}
-                    className="p-2 rounded-xl bg-white/10 text-slate-300 hover:text-white cursor-pointer"
+                    className="p-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white cursor-pointer shrink-0"
                     title="Cancel"
                   >
                     <X className="w-4 h-4" />
@@ -277,25 +297,29 @@ export default function ProfilePage() {
                 )}
               </div>
             ) : (
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg sm:text-xl font-black text-white truncate max-w-[180px]">
-                      {username}
-                    </h2>
-                    <button
-                      onClick={handleStartEdit}
-                      aria-label="Edit Username"
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-[#00E575] hover:bg-white/5 transition-colors cursor-pointer"
-                      title="Edit unique username"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <span className="text-xs text-slate-400 block truncate">
-                    {user?.email || 'Guest Player (Stats saved on device)'}
-                  </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl sm:text-2xl font-black text-white truncate max-w-[170px] sm:max-w-[220px]">
+                    {username}
+                  </h2>
+                  <button
+                    onClick={handleStartEdit}
+                    aria-label="Edit Username"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-[#00E575] hover:bg-white/5 transition-colors cursor-pointer"
+                    title="Edit unique username"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
+
+                <span className="text-xs text-slate-400 block truncate mt-0.5">
+                  {user?.email || 'Guest Player (Local Stats)'}
+                </span>
+
+                <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 mt-2 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
+                  <ShieldCheck className="w-3 h-3 text-[#00E575]" />
+                  <span>Unique Display Name</span>
+                </span>
               </div>
             )}
           </div>
@@ -345,7 +369,7 @@ export default function ProfilePage() {
       <div className="grid grid-cols-2 gap-3 w-full mb-6">
         <Link
           href="/play"
-          className="h-14 rounded-full bg-[#00E575] hover:bg-[#00F77F] active:scale-95 text-[#060A08] font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(0,229,117,0.25)] transition-all cursor-pointer"
+          className="h-14 rounded-full bg-[#00E575] hover:bg-[#00F77F] active:scale-95 text-[#060A08] font-black text-sm flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(0,229,117,0.25)] transition-all cursor-pointer"
         >
           <Play className="w-4 h-4 fill-current ml-0.5" />
           <span>Solo Play</span>
@@ -353,7 +377,7 @@ export default function ProfilePage() {
 
         <Link
           href="/multiplayer"
-          className="h-14 rounded-full bg-[#18231E] hover:bg-[#202E27] border border-[#00E575]/40 text-[#00E575] font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,229,117,0.15)] transition-all cursor-pointer"
+          className="h-14 rounded-full bg-[#18231E] hover:bg-[#202E27] border border-[#00E575]/40 text-[#00E575] font-black text-sm flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,229,117,0.15)] transition-all cursor-pointer"
         >
           <Users className="w-4 h-4" />
           <span>Multiplayer</span>
