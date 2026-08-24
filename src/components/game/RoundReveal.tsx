@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Film, User, Music, ArrowRight } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Film, User, Music, Sparkles } from 'lucide-react';
 import { GameRoundState } from '@/types/game';
 import { getOptimizedCoverUrl } from '@/lib/image-utils';
 
@@ -21,16 +21,21 @@ function RoundReveal({
   const song = roundState.song;
   const isCorrect = roundState.isCorrect;
   const optimizedCover = getOptimizedCoverUrl(song.cover_url);
+  const hasAdvancedRef = useRef(false);
 
   // Reset img error on round change
   useEffect(() => {
     setImgError(false);
+    hasAdvancedRef.current = false;
   }, [song.id]);
 
-  // Auto-advance after 3.5 seconds
+  // Clean auto-advance after 3.5 seconds with single-fire guard
   useEffect(() => {
     const timeout = setTimeout(() => {
-      onNextRound();
+      if (!hasAdvancedRef.current) {
+        hasAdvancedRef.current = true;
+        onNextRound();
+      }
     }, 3500);
 
     const interval = setInterval(() => {
@@ -48,11 +53,12 @@ function RoundReveal({
       {/* Result Status Banner */}
       <div className="mb-4">
         {isCorrect ? (
-          <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-[#00E575]/20 border border-[#00E575]/40 text-[#00E575] font-black text-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00E575]/20 border border-[#00E575]/40 text-[#00E575] font-black text-sm shadow-[0_0_20px_rgba(0,229,117,0.2)]">
+            <Sparkles className="w-4 h-4" />
             <span>Correct! +{roundState.scoreAwarded} pts</span>
           </div>
         ) : (
-          <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 font-bold text-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 font-bold text-sm">
             <span>
               {roundState.status === 'skipped' ? 'Skipped Round' : 'Out of Attempts'} (+0 pts)
             </span>
@@ -100,16 +106,14 @@ function RoundReveal({
         </div>
       </div>
 
-      {/* Advance Next Button */}
-      <div className="mt-5 w-full">
-        <button
-          onClick={onNextRound}
-          className="w-full h-12 rounded-full bg-[#00E575] hover:bg-[#00F77F] active:bg-[#00D06A] text-[#060A08] font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,229,117,0.3)] transition-all cursor-pointer"
-        >
-          <span>{isLastRound ? 'View Final Results' : 'Next Song'}</span>
-          <span className="text-xs opacity-75">({countdown}s)</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
+      {/* Clean Countdown Indicator */}
+      <div className="mt-5 w-full flex items-center justify-center">
+        <div className="px-4 py-2 rounded-full bg-[#18231E] border border-white/10 text-xs font-mono font-bold text-slate-300 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#00E575] animate-ping" />
+          <span>
+            {isLastRound ? `Calculating results in ${countdown}s...` : `Next song starting in ${countdown}s...`}
+          </span>
+        </div>
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import { isGuessCorrect } from '@/lib/search-engine';
 import { calculateStageScore, getStreakMultiplierText } from '@/lib/scoring';
 import { soundFX } from '@/lib/sound-effects';
 import { getOptimizedCoverUrl, preloadImage } from '@/lib/image-utils';
+import { forceRevealMultiplayerRound } from '@/lib/multiplayer-service';
 import AudioPlayer, { AudioPlayerHandle } from '@/components/game/AudioPlayer';
 import SongSearchBar from '@/components/game/SongSearchBar';
 import SnippetProgressTrack from '@/components/game/SnippetProgressTrack';
@@ -76,6 +77,13 @@ export default function MultiplayerArena({
   useEffect(() => {
     onAdvanceRoundRef.current = onAdvanceRound;
   });
+
+  // Fallback: If all joined players locked in their guesses, auto-trigger reveal state
+  useEffect(() => {
+    if (room.status === 'playing' && totalPlayersCount > 0 && finishedCount >= totalPlayersCount) {
+      forceRevealMultiplayerRound(room);
+    }
+  }, [room.status, finishedCount, totalPlayersCount, room]);
 
   // Auto-advance countdown timer when revealing
   const [countdown, setCountdown] = useState<number>(6);
@@ -469,21 +477,9 @@ export default function MultiplayerArena({
               <h3 className="text-base font-bold text-white mb-1">
                 Guess Locked In!
               </h3>
-              <p className="text-xs text-slate-400 max-w-sm mb-3">
+              <p className="text-xs text-slate-400 max-w-sm">
                 Waiting for remaining friends ({finishedCount}/{totalPlayersCount} finished). The round will reveal automatically once everyone has guessed!
               </p>
-
-              {isHost && finishedCount < totalPlayersCount && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSubmitGuess(currentStageIndex, false, 0, 'Host Forced Reveal');
-                  }}
-                  className="mt-2 text-[11px] font-bold text-amber-400/80 hover:text-amber-300 underline cursor-pointer"
-                >
-                  Host: Skip waiting &amp; reveal answers now
-                </button>
-              )}
             </div>
           ) : (
             <div className="w-full flex flex-col items-center gap-3">

@@ -177,11 +177,27 @@ export async function fetchRoomByCode(roomCode: string): Promise<MultiplayerRoom
           lastRoundScore: guessMap[p.user_id]?.scoreAwarded,
         }));
 
+        const dbStatus = dbRoom.status as RoomStatus;
+        const allPlayersGuessed =
+          mappedPlayers.length > 0 &&
+          mappedPlayers.every((p) => Boolean(guessMap[p.userId]));
+
+        const computedStatus: RoomStatus =
+          dbStatus === 'playing' && allPlayersGuessed ? 'revealing' : dbStatus;
+
+        if (dbStatus === 'playing' && allPlayersGuessed) {
+          // Self-heal room status in DB
+          (supabase.from('multiplayer_rooms') as any)
+            .update({ status: 'revealing' })
+            .eq('id', dbRoom.id)
+            .then();
+        }
+
         const room: MultiplayerRoom = {
           id: dbRoom.id,
           code: dbRoom.code,
           hostId: dbRoom.host_id,
-          status: dbRoom.status as RoomStatus,
+          status: computedStatus,
           eraFilter: dbRoom.era_filter as BollywoodEra,
           currentRound: dbRoom.current_round,
           totalRounds: dbRoom.total_rounds,

@@ -236,17 +236,17 @@ const AudioPlayerComponent = forwardRef<AudioPlayerHandle, AudioPlayerProps>(
       };
     }, [song.id, previewUrl, autoPlay, safePlay, stopTrackingLoop]);
 
+    // When disabled changes: immediately pause if disabled
+    useEffect(() => {
+      disabledRef.current = disabled;
+      if (disabled) {
+        safePause();
+      }
+    }, [disabled, safePause]);
+
     // When max duration changes (stage unlocked or switched by user):
     useEffect(() => {
       maxPlayTimeSecRef.current = maxPlayTimeSec;
-      const audio = audioRef.current;
-      if (audio) {
-        try {
-          audio.currentTime = 0;
-        } catch {}
-        setCurrentTime(0);
-        onAudioProgressRef.current?.(0);
-      }
     }, [maxPlayTimeSec]);
 
     return (
