@@ -1,5 +1,5 @@
 -- ==============================================================================
--- HUMMLY SUPABASE DATABASE SCHEMA
+-- HUMMLY SUPABASE DATABASE SCHEMA (Single-Player & Real-Time Multiplayer)
 -- Run this in your Supabase SQL Editor: https://supabase.com/dashboard/project/_/sql
 -- ==============================================================================
 
@@ -50,7 +50,7 @@ begin
     split_part(new.email, '@', 1)
   );
 
-  -- Clean username (alphanumeric only, max 20 chars)
+  -- Clean username (alphanumeric and underscore only, max 20 chars)
   final_username := regexp_replace(raw_username, '[^a-zA-Z0-9_]', '', 'g');
   if length(final_username) < 3 then
     final_username := 'player_' || substr(new.id::text, 1, 6);
@@ -85,7 +85,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- 4. Create GAME_SESSIONS Table
+-- 4. Create GAME_SESSIONS Table (Single Player History & Stats)
 create table if not exists public.game_sessions (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid references public.profiles(id) on delete set null,
@@ -138,3 +138,106 @@ begin
   where id = row_id;
 end;
 $$ language plpgsql security definer;
+
+-- ==============================================================================
+-- 7. MULTIPLAYER ROOMS & SYNCHRONIZATION TABLES
+-- ==============================================================================
+
+-- 7.1 Multiplayer Rooms Table
+create table if not exists public.multiplayer_rooms (
+  id uuid primary key default uuid_generate_v4(),
+  code text unique not null,
+  host_id uuid references public.profiles(id) on delete cascade not null,
+  status text not null default 'lobby', -- 'lobby' | 'playing' | 'revealing' | 'finished'
+  era_filter text not null default 'all',
+  current_round integer not null default 1,
+  total_rounds integer not null default 10,
+  playlist jsonb not null default '[]'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.multiplayer_rooms enable row level security;
+
+create policy "Multiplayer rooms are viewable by everyone."
+  on public.multiplayer_rooms for select
+  using (true);
+
+create policy "Authenticated users can create multiplayer rooms."
+  on public.multiplayer_rooms for insert
+  with check (auth.uid() is not null);
+
+create policy "Room players or host can update rooms."
+  on public.multiplayer_rooms for update
+  using (
+    auth.uid() = host_id
+    or exists (
+      select 1 from public.multiplayer_players
+      where room_id = public.multiplayer_rooms.id
+      and user_id = auth.uid()
+    )
+  );
+
+-- 7.2 Multiplayer Players Table (Up to 5 players per room)
+create table if not exists public.multiplayer_players (
+  id uuid primary key default uuid_generate_v4(),
+  room_id uuid references public.multiplayer_rooms(id) on delete cascade not null,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  username text not null,
+  avatar_url text,
+  is_host boolean not null default false,
+  is_ready boolean not null default false,
+  total_score integer not null default 0,
+  correct_count integer not null default 0,
+  current_streak integer not null default 0,
+  max_streak integer not null default 0,
+  joined_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(room_id, user_id)
+);
+
+alter table public.multiplayer_players enable row level security;
+
+create policy "Multiplayer players are viewable by everyone."
+  on public.multiplayer_players for select
+  using (true);
+
+create policy "Authenticated users can join rooms."
+  on public.multiplayer_players for insert
+  with check (auth.uid() = user_id);
+
+create policy "Players can update their own row."
+  on public.multiplayer_players for update
+  using (auth.uid() = user_id);
+
+create policy "Players can leave rooms."
+  on public.multiplayer_players for delete
+  using (auth.uid() = user_id);
+
+-- 7.3 Multiplayer Guesses Table (Synchronous Round Tracking)
+create table if not exists public.multiplayer_guesses (
+  id uuid primary key default uuid_generate_v4(),
+  room_id uuid references public.multiplayer_rooms(id) on delete cascade not null,
+  round_number integer not null,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  stage_index integer not null default 0,
+  is_correct boolean not null default false,
+  score_awarded integer not null default 0,
+  guess_title text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(room_id, round_number, user_id)
+);
+
+alter table public.multiplayer_guesses enable row level security;
+
+create policy "Multiplayer guesses are viewable by everyone."
+  on public.multiplayer_guesses for select
+  using (true);
+
+create policy "Players can submit guesses for their user_id."
+  on public.multiplayer_guesses for insert
+  with check (auth.uid() = user_id);
+
+-- Enable Realtime for all multiplayer tables
+alter publication supabase_realtime add table public.multiplayer_rooms;
+alter publication supabase_realtime add table public.multiplayer_players;
+alter publication supabase_realtime add table public.multiplayer_guesses;

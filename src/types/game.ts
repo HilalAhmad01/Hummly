@@ -66,7 +66,7 @@ export interface GameRoundState {
 
 export interface GameSessionSummary {
   id?: string;
-  mode: 'quick_play' | 'daily_challenge';
+  mode: 'quick_play' | 'daily_challenge' | 'multiplayer';
   eraFilter: BollywoodEra;
   totalScore: number;
   correctCount: number;
@@ -93,4 +93,54 @@ export interface LeaderboardEntry {
   gamesPlayed: number;
   highScore: number;
   rank?: number;
+}
+
+// ==========================================
+// MULTIPLAYER DATA CONTRACTS
+// ==========================================
+
+export type RoomStatus = 'lobby' | 'playing' | 'revealing' | 'finished';
+
+export interface RoomPlayer {
+  id: string;
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+  isHost: boolean;
+  isReady: boolean;
+  totalScore: number;
+  correctCount: number;
+  currentStreak: number;
+  maxStreak: number;
+  joinedAt: string;
+  // Live round state
+  roundStatus?: 'thinking' | 'guessed' | 'skipped';
+  lastGuessCorrect?: boolean;
+  lastRoundScore?: number;
+}
+
+export interface PlayerRoundGuess {
+  userId: string;
+  username: string;
+  roundNumber: number;
+  stageIndex: number;
+  isCorrect: boolean;
+  scoreAwarded: number;
+  guessTitle?: string;
+  guessedAt: string;
+}
+
+export interface MultiplayerRoom {
+  id: string;
+  code: string;
+  hostId: string;
+  status: RoomStatus;
+  eraFilter: BollywoodEra;
+  currentRound: number;
+  totalRounds: number;
+  playlist: Song[];
+  players: RoomPlayer[];
+  currentRoundGuesses: Record<string, PlayerRoundGuess>; // Keyed by userId
+  createdAt: string;
+  updatedAt: string;
 }

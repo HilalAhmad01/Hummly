@@ -13,6 +13,9 @@ import {
   PartyPopper,
   ArrowRight,
   ShieldCheck,
+  Users,
+  Crown,
+  Sparkles,
 } from 'lucide-react';
 import { BollywoodEra } from '@/types/game';
 
@@ -122,7 +125,7 @@ export default function HomePage() {
 
         <p className="max-w-2xl text-slate-300 text-base sm:text-lg mt-5 font-medium leading-relaxed">
           Listen to progressive mystery audio snippets unlocking from 0.2s up to 10s.
-          Search by song title, film, or singer, maintain your streak, and top the global leaderboard.
+          Play solo instantly or host a real-time 5-player room with friends to compete for the podium!
         </p>
 
         {/* 5-Stage Progressive Difficulty Preview */}
@@ -145,21 +148,21 @@ export default function HomePage() {
         </div>
 
         {/* Play CTAs */}
-        <div className="mt-8 flex flex-col sm:flex-row items-center gap-4 w-full max-w-md justify-center">
+        <div className="mt-8 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full max-w-xl justify-center">
           <Link
             href="/play"
-            className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#00E575] hover:bg-[#00F77F] active:bg-[#00D06A] text-[#060A08] font-black text-base sm:text-lg flex items-center justify-center gap-3 shadow-[0_0_40px_rgba(0,229,117,0.35)] hover:shadow-[0_0_60px_rgba(0,229,117,0.55)] hover:scale-105 active:scale-95 transition-all"
+            className="w-full sm:w-auto px-7 py-4 rounded-full bg-[#00E575] hover:bg-[#00F77F] active:bg-[#00D06A] text-[#060A08] font-black text-base flex items-center justify-center gap-2.5 shadow-[0_0_40px_rgba(0,229,117,0.35)] hover:shadow-[0_0_60px_rgba(0,229,117,0.55)] hover:scale-105 active:scale-95 transition-all"
           >
             <Play className="w-5 h-5 fill-current ml-0.5" />
-            <span>Play Quick Play (All Eras)</span>
+            <span>Play Solo (Quick Play)</span>
           </Link>
 
           <Link
-            href="/leaderboard"
-            className="w-full sm:w-auto px-6 py-4 rounded-full bg-[#131B17] hover:bg-[#1A2520] border border-white/10 text-slate-200 hover:text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all"
+            href="/multiplayer"
+            className="w-full sm:w-auto px-7 py-4 rounded-full bg-[#18231E] hover:bg-[#202E27] border border-[#00E575]/50 text-[#00E575] font-black text-base flex items-center justify-center gap-2.5 shadow-[0_0_25px_rgba(0,229,117,0.15)] hover:scale-105 active:scale-95 transition-all"
           >
-            <Trophy className="w-4 h-4 text-amber-400" />
-            <span>Leaderboard</span>
+            <Users className="w-5 h-5" />
+            <span>Play With Friends (5 Players)</span>
           </Link>
         </div>
 
@@ -172,9 +175,9 @@ export default function HomePage() {
             </div>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-black text-amber-400 font-mono">5 Stages</div>
+            <div className="text-2xl sm:text-3xl font-black text-amber-400 font-mono">5 Players</div>
             <div className="text-[11px] text-slate-400 uppercase font-bold tracking-wider mt-0.5">
-              0.2s &rarr; 10s Unlock
+              Live Rooms
             </div>
           </div>
           <div>
@@ -186,7 +189,33 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Category Grid Section (Fills PC Screen Beautifully) */}
+      {/* Multiplayer Feature Spotlight Banner */}
+      <section className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-4">
+        <div className="w-full rounded-3xl bg-gradient-to-r from-emerald-950/60 via-[#111714] to-purple-950/40 border border-[#00E575]/20 p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
+          <div className="flex flex-col gap-2 max-w-lg text-center md:text-left">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#00E575] uppercase tracking-wider self-center md:self-start">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>New Real-time Multiplayer</span>
+            </div>
+            <h3 className="text-2xl font-black text-white">
+              Host a 10-Round Match With Up to 5 Friends!
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-400">
+              Listen together, guess in real-time, and see who climbs the Gold, Silver & Bronze victory podium.
+            </p>
+          </div>
+
+          <Link
+            href="/multiplayer"
+            className="px-6 py-3.5 rounded-full bg-[#00E575] hover:bg-[#00F77F] text-[#060A08] font-black text-sm flex items-center gap-2 shadow-[0_0_25px_rgba(0,229,117,0.3)] shrink-0 hover:scale-105 transition-all"
+          >
+            <Crown className="w-4 h-4" />
+            <span>Host or Join Room</span>
+          </Link>
+        </div>
+      </section>
+
+      {/* Category Grid Section */}
       <section className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-10">
         <div className="flex flex-col items-center text-center mb-8">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
@@ -208,29 +237,32 @@ export default function HomePage() {
                 className={`group relative rounded-3xl bg-[#111714] p-5 sm:p-6 flex flex-col justify-between border ${cat.borderColor} bg-gradient-to-b ${cat.gradient} hover:scale-[1.02] active:scale-[0.99] transition-all duration-300 shadow-lg overflow-hidden`}
               >
                 <div>
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-[#00E575] group-hover:rotate-6 transition-transform">
-                      <Icon className="w-5 h-5" />
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                      <Icon className="w-6 h-6 text-[#00E575]" />
                     </div>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-white/10 text-slate-200 border border-white/10">
+
+                    <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-white/5 text-slate-300 border border-white/10 group-hover:border-[#00E575]/40 transition-colors">
                       {cat.eraBadge}
                     </span>
                   </div>
 
-                  <h3 className="text-lg sm:text-xl font-black text-white group-hover:text-[#00E575] transition-colors">
+                  <h3 className="text-xl font-bold text-white mb-1 group-hover:text-[#00E575] transition-colors">
                     {cat.title}
                   </h3>
-
-                  <p className="text-slate-400 text-xs sm:text-sm mt-1 leading-relaxed">
+                  <p className="text-slate-400 text-xs mb-4">
                     {cat.subtitle}
                   </p>
+
+                  <div className="text-[11px] text-slate-500 font-medium">
+                    <span className="text-slate-400">Featured: </span>
+                    {cat.popularSongs}
+                  </div>
                 </div>
 
-                <div className="mt-5 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
-                  <span className="truncate max-w-[200px] text-slate-400">{cat.popularSongs}</span>
-                  <span className="flex items-center gap-1 font-bold text-[#00E575] group-hover:translate-x-1 transition-transform flex-shrink-0">
-                    Play <ArrowRight className="w-3.5 h-3.5" />
-                  </span>
+                <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold text-[#00E575]">
+                  <span>Play Category</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </div>
               </Link>
             );

@@ -1,5 +1,14 @@
 import { SNIPPET_STAGES } from '@/types/game';
 
+/**
+ * Consistent Streak Multiplier:
+ * Streak 0-1: 1.0x (Standard)
+ * Streak 2:   1.2x (+20% bonus)
+ * Streak 3:   1.5x (+50% bonus)
+ * Streak 4:   1.8x (+80% bonus)
+ * Streak 5-7: 2.2x (+120% bonus)
+ * Streak 8+:  2.5x (+150% mega bonus)
+ */
 export function getStreakMultiplier(streak: number): number {
   if (streak <= 1) return 1.0;
   if (streak === 2) return 1.2;
@@ -9,6 +18,19 @@ export function getStreakMultiplier(streak: number): number {
   return 2.5;
 }
 
+export function getStreakMultiplierText(streak: number): string {
+  const mult = getStreakMultiplier(streak);
+  return `${mult.toFixed(1)}x`;
+}
+
+/**
+ * Calculate round score based on unlocked snippet difficulty stage:
+ * Impossible (0.2s) -> 1,000 pts (Highest)
+ * Expert (0.8s)     -> 800 pts
+ * Hard (2.5s)       -> 600 pts
+ * Medium (5.0s)     -> 400 pts
+ * Easy (10.0s)      -> 200 pts (Lowest)
+ */
 export function calculateStageScore(
   stageIndex: number, // 0 to 4
   streak: number

@@ -15,7 +15,7 @@ import {
 } from '@/types/game';
 import { CURATED_BOLLYWOOD_SONGS } from '@/lib/mock-data';
 import { isGuessCorrect } from '@/lib/search-engine';
-import { calculateStageScore } from '@/lib/scoring';
+import { calculateStageScore, getStreakMultiplierText } from '@/lib/scoring';
 import { soundFX } from '@/lib/sound-effects';
 
 import AudioPlayer, { AudioPlayerHandle } from '@/components/game/AudioPlayer';
@@ -432,7 +432,7 @@ function PlayGameContent() {
                   <span className="text-xs font-bold text-slate-300">Streak Multiplier</span>
                 </div>
                 <span className="font-mono font-black text-sm text-amber-400">
-                  {currentStreak >= 2 ? `${(1 + currentStreak * 0.1).toFixed(1)}x` : '1.0x'}
+                  {getStreakMultiplierText(currentStreak)}
                 </span>
               </div>
             </div>

@@ -117,6 +117,123 @@ export interface Database {
           played_at?: string
         }
       }
+      multiplayer_rooms: {
+        Row: {
+          id: string
+          code: string
+          host_id: string
+          status: string
+          era_filter: string
+          current_round: number
+          total_rounds: number
+          playlist: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          host_id: string
+          status?: string
+          era_filter?: string
+          current_round?: number
+          total_rounds?: number
+          playlist: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          code?: string
+          host_id?: string
+          status?: string
+          era_filter?: string
+          current_round?: number
+          total_rounds?: number
+          playlist?: Json
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      multiplayer_players: {
+        Row: {
+          id: string
+          room_id: string
+          user_id: string
+          username: string
+          avatar_url: string | null
+          is_host: boolean
+          is_ready: boolean
+          total_score: number
+          correct_count: number
+          current_streak: number
+          max_streak: number
+          joined_at: string
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          user_id: string
+          username: string
+          avatar_url?: string | null
+          is_host?: boolean
+          is_ready?: boolean
+          total_score?: number
+          correct_count?: number
+          current_streak?: number
+          max_streak?: number
+          joined_at?: string
+        }
+        Update: {
+          id?: string
+          room_id?: string
+          user_id?: string
+          username?: string
+          avatar_url?: string | null
+          is_host?: boolean
+          is_ready?: boolean
+          total_score?: number
+          correct_count?: number
+          current_streak?: number
+          max_streak?: number
+          joined_at?: string
+        }
+      }
+      multiplayer_guesses: {
+        Row: {
+          id: string
+          room_id: string
+          round_number: number
+          user_id: string
+          stage_index: number
+          is_correct: boolean
+          score_awarded: number
+          guess_title: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          round_number: number
+          user_id: string
+          stage_index: number
+          is_correct: boolean
+          score_awarded: number
+          guess_title?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          room_id?: string
+          round_number?: number
+          user_id?: string
+          stage_index?: number
+          is_correct?: boolean
+          score_awarded?: number
+          guess_title?: string | null
+          created_at?: string
+        }
+      }
     }
     Views: {
       leaderboard_view: {
