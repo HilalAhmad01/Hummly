@@ -37,7 +37,12 @@ function SongSearchBar({
     setSelectedIndex(-1);
     setIsOpen(false);
 
-    if (!disabled && inputRef.current) {
+    // Only auto-focus on desktop with a physical keyboard; never on mobile/touch screens
+    const isTouchOrMobile =
+      typeof window !== 'undefined' &&
+      (window.innerWidth < 768 || window.matchMedia('(pointer: coarse)').matches);
+
+    if (!disabled && !isTouchOrMobile && inputRef.current) {
       focusTimeoutRef.current = setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
