@@ -101,20 +101,27 @@ export default function MultiplayerArena({
     return () => clearInterval(timer);
   }, [isRevealing, isHost]);
 
-  // Reset local round state on round change & preload cover artwork
+  // Track previous round to ONLY reset stage when the round actually changes
+  const prevRoundRef = useRef(room.currentRound);
   useEffect(() => {
-    setCurrentStageIndex(0);
-    setCurrentAudioProgressTime(0);
-    setIsPlayingAudio(true);
+    if (prevRoundRef.current !== room.currentRound) {
+      prevRoundRef.current = room.currentRound;
+      setCurrentStageIndex(0);
+      setCurrentAudioProgressTime(0);
+      setIsPlayingAudio(true);
+    }
+  }, [room.currentRound]);
 
+  // Preload cover artwork in the background
+  useEffect(() => {
     if (currentSong?.cover_url) {
       preloadImage(currentSong.cover_url);
     }
-    const nextSong = room.playlist[room.currentRound];
+    const nextSong = room.playlist?.[room.currentRound];
     if (nextSong?.cover_url) {
       preloadImage(nextSong.cover_url);
     }
-  }, [room.currentRound, currentSong?.cover_url, room.playlist]);
+  }, [room.currentRound, currentSong?.id]);
 
   // Handle stage switch
   const handleSelectStage = useCallback((targetStageIndex: number) => {
