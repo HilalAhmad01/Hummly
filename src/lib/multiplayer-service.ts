@@ -121,6 +121,90 @@ const localHub = new LocalRoomHub();
 const activeRealtimeChannels = new Map<string, any>();
 
 // ==============================================================================
+// FETCH ROOM STATE HELPER (Database + Local Fallback)
+// ==============================================================================
+
+export async function fetchRoomByCode(roomCode: string): Promise<MultiplayerRoom | null> {
+  const cleanCode = roomCode.trim().toUpperCase();
+  const supabase = createClient();
+
+  if (supabase && isSupabaseConfigured) {
+    try {
+      const { data: dbRoom, error: dbRoomErr } = await (supabase.from('multiplayer_rooms') as any)
+        .select('*')
+        .eq('code', cleanCode)
+        .single();
+
+      if (dbRoom && !dbRoomErr) {
+        const { data: dbPlayers } = await (supabase.from('multiplayer_players') as any)
+          .select('*')
+          .eq('room_id', dbRoom.id)
+          .order('joined_at', { ascending: true });
+
+        const { data: dbGuesses } = await (supabase.from('multiplayer_guesses') as any)
+          .select('*')
+          .eq('room_id', dbRoom.id)
+          .eq('round_number', dbRoom.current_round);
+
+        const guessMap: Record<string, PlayerRoundGuess> = {};
+        dbGuesses?.forEach((g: any) => {
+          guessMap[g.user_id] = {
+            userId: g.user_id,
+            username: '',
+            roundNumber: g.round_number,
+            stageIndex: g.stage_index,
+            isCorrect: g.is_correct,
+            scoreAwarded: g.score_awarded,
+            guessTitle: g.guess_title || undefined,
+            guessedAt: g.created_at,
+          };
+        });
+
+        const mappedPlayers: RoomPlayer[] = (dbPlayers || []).map((p: any) => ({
+          id: p.id,
+          userId: p.user_id,
+          username: p.username,
+          avatarUrl: p.avatar_url || undefined,
+          isHost: p.is_host,
+          isReady: p.is_ready,
+          totalScore: p.total_score,
+          correctCount: p.correct_count,
+          currentStreak: p.current_streak,
+          maxStreak: p.max_streak,
+          joinedAt: p.joined_at,
+          roundStatus: guessMap[p.user_id] ? (guessMap[p.user_id].isCorrect ? 'guessed' : 'skipped') : 'thinking',
+          lastGuessCorrect: guessMap[p.user_id]?.isCorrect,
+          lastRoundScore: guessMap[p.user_id]?.scoreAwarded,
+        }));
+
+        const room: MultiplayerRoom = {
+          id: dbRoom.id,
+          code: dbRoom.code,
+          hostId: dbRoom.host_id,
+          status: dbRoom.status as RoomStatus,
+          eraFilter: dbRoom.era_filter as BollywoodEra,
+          currentRound: dbRoom.current_round,
+          totalRounds: dbRoom.total_rounds,
+          playlist: (dbRoom.playlist as unknown as Song[]) || [],
+          players: mappedPlayers,
+          currentRoundGuesses: guessMap,
+          createdAt: dbRoom.created_at,
+          updatedAt: dbRoom.updated_at,
+        };
+
+        // Cache locally
+        localHub.saveAndBroadcast(room);
+        return room;
+      }
+    } catch (err) {
+      console.warn('DB lookup failed, trying local hub:', err);
+    }
+  }
+
+  return localHub.getRoom(cleanCode);
+}
+
+// ==============================================================================
 // MULTIPLAYER SERVICE API
 // ==============================================================================
 
@@ -211,8 +295,8 @@ export async function createMultiplayerRoom({
     }
   }
 
-  // Save to local hub
-  localHub.saveAndBroadcast(initialRoom);
+  // Save and broadcast
+  broadcastRoomState(initialRoom);
   return { room: initialRoom, error: null };
 }
 
@@ -221,81 +305,7 @@ export async function joinMultiplayerRoom(
   user: { id: string; email?: string; username: string; avatarUrl?: string }
 ): Promise<{ room: MultiplayerRoom | null; error: string | null }> {
   const cleanCode = roomCode.trim().toUpperCase();
-  const supabase = createClient();
-
-  let room: MultiplayerRoom | null = null;
-
-  if (supabase && isSupabaseConfigured) {
-    try {
-      const { data: dbRoom, error: dbRoomErr } = await (supabase.from('multiplayer_rooms') as any)
-        .select('*')
-        .eq('code', cleanCode)
-        .single();
-
-      if (dbRoom && !dbRoomErr) {
-        const { data: dbPlayers } = await (supabase.from('multiplayer_players') as any)
-          .select('*')
-          .eq('room_id', dbRoom.id);
-
-        const { data: dbGuesses } = await (supabase.from('multiplayer_guesses') as any)
-          .select('*')
-          .eq('room_id', dbRoom.id)
-          .eq('round_number', dbRoom.current_round);
-
-        const guessMap: Record<string, PlayerRoundGuess> = {};
-        dbGuesses?.forEach((g: any) => {
-          guessMap[g.user_id] = {
-            userId: g.user_id,
-            username: '',
-            roundNumber: g.round_number,
-            stageIndex: g.stage_index,
-            isCorrect: g.is_correct,
-            scoreAwarded: g.score_awarded,
-            guessTitle: g.guess_title || undefined,
-            guessedAt: g.created_at,
-          };
-        });
-
-        const mappedPlayers: RoomPlayer[] = (dbPlayers || []).map((p: any) => ({
-          id: p.id,
-          userId: p.user_id,
-          username: p.username,
-          avatarUrl: p.avatar_url || undefined,
-          isHost: p.is_host,
-          isReady: p.is_ready,
-          totalScore: p.total_score,
-          correctCount: p.correct_count,
-          currentStreak: p.current_streak,
-          maxStreak: p.max_streak,
-          joinedAt: p.joined_at,
-          roundStatus: guessMap[p.user_id] ? (guessMap[p.user_id].isCorrect ? 'guessed' : 'skipped') : 'thinking',
-          lastGuessCorrect: guessMap[p.user_id]?.isCorrect,
-          lastRoundScore: guessMap[p.user_id]?.scoreAwarded,
-        }));
-
-        room = {
-          id: dbRoom.id,
-          code: dbRoom.code,
-          hostId: dbRoom.host_id,
-          status: dbRoom.status as RoomStatus,
-          eraFilter: dbRoom.era_filter as BollywoodEra,
-          currentRound: dbRoom.current_round,
-          totalRounds: dbRoom.total_rounds,
-          playlist: (dbRoom.playlist as unknown as Song[]) || [],
-          players: mappedPlayers,
-          currentRoundGuesses: guessMap,
-          createdAt: dbRoom.created_at,
-          updatedAt: dbRoom.updated_at,
-        };
-      }
-    } catch (err) {
-      console.warn('DB lookup failed, trying local hub:', err);
-    }
-  }
-
-  if (!room) {
-    room = localHub.getRoom(cleanCode);
-  }
+  const room = await fetchRoomByCode(cleanCode);
 
   if (!room) {
     return { room: null, error: `Room "${cleanCode}" not found. Please check the code and try again.` };
@@ -336,6 +346,7 @@ export async function joinMultiplayerRoom(
 
   room.players.push(newPlayer);
 
+  const supabase = createClient();
   if (supabase && isSupabaseConfigured) {
     try {
       await (supabase.from('multiplayer_players') as any).insert({
@@ -351,7 +362,8 @@ export async function joinMultiplayerRoom(
     }
   }
 
-  localHub.saveAndBroadcast(room);
+  // Broadcast to all connected devices via Supabase channel
+  broadcastRoomState(room);
   return { room, error: null };
 }
 
@@ -383,6 +395,26 @@ export function subscribeToMultiplayerRoom(
           localHub.saveAndBroadcast(payload.payload.room);
         }
       })
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'multiplayer_players' },
+        async () => {
+          const freshRoom = await fetchRoomByCode(cleanCode);
+          if (freshRoom) {
+            onUpdate(freshRoom);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'multiplayer_rooms' },
+        async () => {
+          const freshRoom = await fetchRoomByCode(cleanCode);
+          if (freshRoom) {
+            onUpdate(freshRoom);
+          }
+        }
+      )
       .subscribe();
   }
 
@@ -429,10 +461,22 @@ export function togglePlayerReadyState(room: MultiplayerRoom, userId: string): M
   const updated = { ...room };
   updated.players = updated.players.map((p) => {
     if (p.userId === userId) {
-      return { ...p, isReady: !p.isReady };
+      const nextReady = !p.isReady;
+
+      const supabase = createClient();
+      if (supabase && isSupabaseConfigured) {
+        (supabase.from('multiplayer_players') as any)
+          .update({ is_ready: nextReady })
+          .eq('room_id', room.id)
+          .eq('user_id', userId)
+          .then();
+      }
+
+      return { ...p, isReady: nextReady };
     }
     return p;
   });
+
   broadcastRoomState(updated);
   return updated;
 }
@@ -450,6 +494,15 @@ export function startMultiplayerGame(room: MultiplayerRoom): MultiplayerRoom {
       lastRoundScore: 0,
     })),
   };
+
+  const supabase = createClient();
+  if (supabase && isSupabaseConfigured) {
+    (supabase.from('multiplayer_rooms') as any)
+      .update({ status: 'playing', current_round: 1 })
+      .eq('id', room.id)
+      .then();
+  }
+
   broadcastRoomState(updated);
   return updated;
 }

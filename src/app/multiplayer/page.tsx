@@ -20,6 +20,7 @@ import { BollywoodEra, MultiplayerRoom } from '@/types/game';
 import {
   createMultiplayerRoom,
   joinMultiplayerRoom,
+  fetchRoomByCode,
   subscribeToMultiplayerRoom,
   togglePlayerReadyState,
   startMultiplayerGame,
@@ -113,16 +114,38 @@ function MultiplayerContent() {
     }
   }, []);
 
-  // 2. Realtime Room Subscription
+  // 2. Realtime Room Subscription & Cross-Device Sync
   useEffect(() => {
     if (!activeRoom?.code) return;
+    const roomCode = activeRoom.code;
 
-    const unsubscribe = subscribeToMultiplayerRoom(activeRoom.code, (updatedRoom) => {
+    const unsubscribe = subscribeToMultiplayerRoom(roomCode, (updatedRoom) => {
       setActiveRoom(updatedRoom);
     });
 
+    // Cross-device backup poller every 2s to guarantee instant sync
+    const syncInterval = setInterval(async () => {
+      const fresh = await fetchRoomByCode(roomCode);
+      if (fresh) {
+        setActiveRoom((prev) => {
+          if (!prev) return fresh;
+          if (
+            prev.players.length !== fresh.players.length ||
+            prev.status !== fresh.status ||
+            prev.currentRound !== fresh.currentRound ||
+            Object.keys(prev.currentRoundGuesses).length !== Object.keys(fresh.currentRoundGuesses).length ||
+            prev.players.some((p, i) => p.isReady !== fresh.players[i]?.isReady)
+          ) {
+            return fresh;
+          }
+          return prev;
+        });
+      }
+    }, 2000);
+
     return () => {
       unsubscribe();
+      clearInterval(syncInterval);
     };
   }, [activeRoom?.code]);
 
