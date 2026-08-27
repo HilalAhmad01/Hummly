@@ -82,6 +82,16 @@ const BOLLYWOOD_CATEGORIES: EraCategory[] = [
     popularSongs: 'Tujhe Dekha Toh, Pehla Nasha, Chaiyya Chaiyya, Baazigar',
   },
   {
+    id: 'punjabi',
+    title: 'Punjabi Songs',
+    subtitle: '90+ mega hits from Sidhu Moose Wala, Karan Aujla, Shubh & AP Dhillon',
+    eraBadge: '90+ Hits',
+    icon: Flame,
+    gradient: 'from-orange-500/20 via-red-500/10 to-transparent',
+    borderColor: 'border-orange-500/30 hover:border-orange-500/60',
+    popularSongs: 'Karan Aujla, Sidhu Moose Wala, Shubh, AP Dhillon, Diljit Dosanjh',
+  },
+  {
     id: 'party',
     title: 'Party & Dance Bangers',
     subtitle: 'High-energy celebration, sangeet, and club anthems',

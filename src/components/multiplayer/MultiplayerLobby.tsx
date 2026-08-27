@@ -29,6 +29,7 @@ interface MultiplayerLobbyProps {
 
 const ERA_LABELS: Record<BollywoodEra, string> = {
   all: 'All Bollywood Hits',
+  punjabi: 'Punjabi Songs',
   '2020s': '2020s Chartbusters',
   '2010s': 'Golden 2010s',
   '2000s': 'Nostalgic 2000s',

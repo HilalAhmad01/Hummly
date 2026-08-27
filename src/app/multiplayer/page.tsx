@@ -37,7 +37,8 @@ import MultiplayerPodium from '@/components/multiplayer/MultiplayerPodium';
 
 const ERA_OPTIONS: { id: BollywoodEra; label: string; icon: string; desc: string }[] = [
   { id: 'all', label: 'All Bollywood Hits', icon: '🌟', desc: '500+ tracks spanning all golden eras' },
-  { id: '2020s', label: '2020s Chartbusters', icon: '🔥', desc: 'Animal, Jawan, Stree 2 & modern hits' },
+  { id: 'punjabi', label: 'Punjabi Songs', icon: '🔥', desc: 'Sidhu Moose Wala, Karan Aujla, Shubh & AP Dhillon' },
+  { id: '2020s', label: '2020s Chartbusters', icon: '⚡', desc: 'Animal, Jawan, Stree 2 & modern hits' },
   { id: '2010s', label: 'Golden 2010s', icon: '🎸', desc: 'Arijit Singh, Pritam & YJHD melodies' },
   { id: '2000s', label: 'Nostalgic 2000s', icon: '🎧', desc: 'KK, Sonu Nigam & Y2K evergreen gold' },
   { id: '90s', label: '90s Retro Classics', icon: '📻', desc: 'DDLJ, Kumar Sanu & Alka Yagnik classics' },

@@ -1,4 +1,4 @@
-export type BollywoodEra = 'all' | '2020s' | '2010s' | '2000s' | '90s' | 'party' | 'romance';
+export type BollywoodEra = 'all' | '2020s' | '2010s' | '2000s' | '90s' | 'party' | 'romance' | 'punjabi';
 
 export interface SnippetStage {
   stageNumber: number;
@@ -23,7 +23,7 @@ export interface Song {
   artist: string;
   movie_or_album: string;
   language: string;
-  era: '2020s' | '2010s' | '2000s' | '90s' | 'retro' | 'all';
+  era: '2020s' | '2010s' | '2000s' | '90s' | 'retro' | 'punjabi' | 'all';
   theme?: 'romantic' | 'party' | 'dance' | 'chartbuster' | 'retro' | 'soulful';
   year?: number;
   difficulty?: number;

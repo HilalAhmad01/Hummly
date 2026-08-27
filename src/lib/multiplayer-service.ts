@@ -45,6 +45,8 @@ export function pickMultiplayerPlaylist(targetEra: BollywoodEra): Song[] {
     pool = pool.filter((s) => s.era === '2000s');
   } else if (targetEra === '90s') {
     pool = pool.filter((s) => s.era === '90s');
+  } else if (targetEra === 'punjabi') {
+    pool = pool.filter((s) => s.era === 'punjabi' || s.language === 'punjabi');
   } else if (targetEra === 'party') {
     pool = pool.filter((s) => s.theme === 'party');
   } else if (targetEra === 'romance') {
