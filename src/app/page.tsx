@@ -94,12 +94,12 @@ const BOLLYWOOD_CATEGORIES: EraCategory[] = [
   {
     id: 'party',
     title: 'Party & Dance Bangers',
-    subtitle: 'High-energy celebration, sangeet, and club anthems',
-    eraBadge: 'Dance Mode',
+    subtitle: '150+ high-energy celebration, club, and sangeet party anthems',
+    eraBadge: '150+ Bangers',
     icon: PartyPopper,
     gradient: 'from-yellow-500/20 via-amber-500/10 to-transparent',
     borderColor: 'border-yellow-500/30 hover:border-yellow-500/60',
-    popularSongs: 'Badtameez Dil, Dhoom Machale, Ghungroo, Aankh Marey, Kar Gayi Chull',
+    popularSongs: 'Badtameez Dil, Ghungroo, Kar Gayi Chull, Aankh Marey, Bom Diggy Diggy',
   },
   {
     id: 'romance',
