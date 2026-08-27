@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -44,6 +45,7 @@ export default function RootLayout({
       <body className="bg-[#060A08] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-[#00E575] selection:text-black">
         <Navbar />
         <main className="flex-1 relative z-10 flex flex-col">{children}</main>
+        <Footer />
         <Analytics />
       </body>
     </html>

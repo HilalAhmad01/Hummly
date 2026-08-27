@@ -1,90 +1,122 @@
-# 🎬 SwaraGuess — The Ultimate Bollywood Music Trivia Game
+# 🎵 Hummly — The Ultimate Bollywood & Desi Music Guessing Game
 
-A high-octane, dark-themed, mobile-first **Bollywood Song Guessing Game** built on **Next.js 14+ (App Router)**, **Tailwind CSS**, and **Supabase (Postgres & Auth)**, optimized for **100% free Vercel deployment** with zero unlicensed audio rehosting.
+<div align="center">
+
+![Hummly Banner](https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200&auto=format&fit=crop&q=80)
+
+**Listen to short mystery snippets, guess the track in stages, and battle your friends in real-time.**  
+Featuring **750+ curated Bollywood, Punjabi, Retro, Party, and Romantic hits**!
+
+[![Next.js](https://img.shields.io/badge/Next.js-16.3-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Auth-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-Deployed-black?style=for-the-badge&logo=vercel)](https://vercel.com/)
+
+**Created with 💚 by [Hilal Ahmad](https://github.com/HilalAhmad01)**
+
+</div>
 
 ---
 
 ## 🌟 Key Features
 
-- 🔍 **Interactive Autocomplete Search Bar**: Guess the song in real-time by typing song titles, movie names, or singers (Heardle / Wordle style) with sub-5ms instant in-memory fuzzy search.
-- 🎧 **High-Fidelity 30s Audio Previews**: Direct HTML5 audio streaming via official Apple Music & Deezer preview CDNs + YouTube IFrame fallback (0 bandwidth consumed on Vercel).
-- 🎬 **Rich Bollywood Eras & Themes**:
-  - 🌟 **All Bollywood Hits**
-  - 🔥 **2020s Chartbusters** (*Brahmāstra, Animal, Jawan, Pathaan, Bad Newz*)
-  - 🎸 **Golden 2010s** (*Aashiqui 2, YJHD, Rockstar, Tamasha, ADHM*)
-  - 🎧 **Nostalgic 2000s** (*Kal Ho Naa Ho, Jab We Met, K3G, Dil Chahta Hai*)
-  - 📻 **90s Retro Classics** (*DDLJ, Kuch Kuch Hota Hai, Mohra, Baazigar*)
-  - 💃 **Party & Dance Bangers** (*High-energy celebration & club anthems*)
-  - 💖 **Romantic Melodies** (*Soulful love ballads & unplugged melodies*)
-- ⚡ **Dynamic Speed Scoring & Streaks**: Faster answers earn up to 1,000 pts with consecutive streak multipliers up to 2.5x.
-- 📱 **Mobile-First & PWA**: Touch-friendly buttons, "Tap to Start" audio context unlock for mobile browsers, and installable PWA shell.
-- 🏆 **Global & Weekly Leaderboards**: Powered by Supabase Postgres with guest play support out of the box.
-- 🛠️ **Automated Cataloging CLI Pipeline**: Easily lookup and validate 500+ Bollywood songs with a single command.
+### 🎧 Progressive Audio Snippet Engine
+- Guess the track across **5 progressive difficulty stages**:
+  - 🟣 **Impossible (0.2s)** — 1,000 pts *(for the true musical savants)*
+  - 🔴 **Expert (0.8s)** — 800 pts
+  - 🟠 **Hard (2.5s)** — 600 pts
+  - 🟡 **Medium (5.0s)** — 400 pts
+  - 🟢 **Easy (10.0s)** — 200 pts
+- **Anti-Exploit Protection**: Unlocking a longer snippet permanently locks previous shorter stages for that round, preventing retroactively claiming higher points.
+
+### ⚔️ Real-Time Multiplayer Arena
+- **Instant Room Creation**: Create private lobbies with a unique 6-character room code.
+- **Cross-Device Sync**: Play live with friends across phones, laptops, and tablets with automated countdown timers, simultaneous snippet unlocks, and standup scoreboards.
+- **Victory Podium & Rematch**: Top 3 players celebrate on an animated podium. The host can restart a fresh 10-round match in the same room with one click (`Play Again with Same Lobby`).
+
+### 🔍 Lightning-Fast Autocomplete
+- Powered by in-memory **Fuse.js fuzzy search** (sub-5ms response time).
+- Search effortlessly across **750+ songs** by track title, movie/album name, or singer.
+
+### 🎼 Rich Curated Music Collections
+- 🌟 **All Bollywood Hits** (Full 750+ track shuffle pool)
+- 🔥 **Punjabi Songs** (*150+ mega hits from Sidhu Moose Wala, Karan Aujla, Shubh, AP Dhillon, Diljit Dosanjh, Navaan Sandhu, Arjan Dhillon*)
+- 💃 **Party & Dance Bangers** (*150+ high-energy club anthems from Badshah, Honey Singh, Pritam, Guru Randhawa*)
+- 💖 **Romantic Melodies** (*100+ soulful love ballads from Arijit Singh, Atif Aslam, KK, The Local Train, Anuv Jain*)
+- ⚡ **2020s Chartbusters** (*Animal, Brahmāstra, Jawan, Stree 2, Bad Newz*)
+- 🎸 **Golden 2010s** (*Aashiqui 2, YJHD, Rockstar, Tamasha, ADHM*)
+- 🎧 **Nostalgic 2000s** (*Kal Ho Naa Ho, Jab We Met, K3G, Dil Chahta Hai*)
+- 📻 **90s Retro Classics** (*DDLJ, Saajan, Kuch Kuch Hota Hai, Khal Nayak, Mohra*)
+
+### 🏆 Profiles & Global Leaderboards
+- Track high scores, games played, win rate, and guess speed.
+- Weekly and all-time global leaderboards powered by Supabase Postgres.
 
 ---
 
-## 🚀 Quick Start (Local Development)
+## 🛠️ Tech Stack
 
-### 1. Install Dependencies
+- **Framework**: [Next.js 16 (App Router)](https://nextjs.org/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) with custom dark glassmorphic design system
+- **Database & Realtime**: [Supabase](https://supabase.com/) (PostgreSQL & Row Level Security)
+- **Audio Delivery**: Native HTML5 `<audio>` engine with official streaming CDNs (0 bandwidth rehosted)
+- **Search Engine**: [Fuse.js](https://fusejs.io/) in-memory fuzzy index
+- **Analytics**: [@vercel/analytics](https://vercel.com/analytics)
+- **Deployment**: [Vercel](https://vercel.com/)
+
+---
+
+## 🚀 Getting Started Locally
+
+### Prerequisites
+- Node.js 18+ installed
+- npm or pnpm
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/HilalAhmad01/Hummly.git
+cd Hummly
+```
+
+### 2. Install dependencies
 ```bash
 npm install
 ```
 
-### 2. Run the Dev Server
+### 3. Set up Environment Variables
+Create a `.env.local` file in the project root:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+### 4. Run the development server
 ```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser. The game is immediately playable in Guest Mode with 120+ pre-curated Bollywood songs!
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 🗄️ Free Database Setup (Supabase)
+## 🌐 Deployment to Vercel
 
-1. Create a free project at [supabase.com](https://supabase.com).
-2. Go to **SQL Editor** in your Supabase dashboard and execute the contents of [`supabase/migrations/001_initial_schema.sql`](file:///home/echidna/music%20guesser/supabase/migrations/001_initial_schema.sql).
-3. Optional: Execute [`supabase/seed.sql`](file:///home/echidna/music%20guesser/supabase/seed.sql) to seed initial tracks.
-4. Copy your **Project URL** and **anon key** from `Settings -> API` into your `.env.local`:
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-```
+1. Push your code to your GitHub repository.
+2. Go to [Vercel Dashboard](https://vercel.com) and click **"Add New Project"**.
+3. Import `HilalAhmad01/Hummly`.
+4. Configure the environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
+5. Click **Deploy**. Vercel will automatically build and publish your game globally!
 
 ---
 
-## 🎶 Offline Song Cataloging CLI Tool
+## 👨‍💻 Author
 
-Add hundreds of new songs to your trivia catalog in seconds:
-
-1. Add your song titles and artists to [`scripts/song-list.json`](file:///home/echidna/music%20guesser/scripts/song-list.json).
-2. Run the cataloging script:
-```bash
-npm run catalog:songs
-```
-This automatically queries the Apple Music and Deezer search APIs, runs fuzzy string matching, filters out karaoke/remixes, and writes:
-- `scripts/import-ready.json` & `scripts/import-ready.csv` (High Confidence $\ge 75\%$)
-- `scripts/needs-review.csv` (Flagged for manual review)
-
-3. Import verified songs directly into your Supabase database:
-```bash
-npm run db:import
-```
+**Hilal Ahmad**  
+- GitHub: [@HilalAhmad01](https://github.com/HilalAhmad01)
+- Project: [Hummly](https://github.com/HilalAhmad01/Hummly)
 
 ---
 
-## 🌐 1-Click Vercel Deployment (100% Free Tier)
-
-1. Push your repository to GitHub.
-2. Go to [vercel.com](https://vercel.com) and click **"Add New Project"**.
-3. Import your GitHub repository.
-4. In **Environment Variables**, add:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-5. Click **Deploy**. Your Bollywood trivia app is live worldwide!
-
----
-
-## ⚖️ Legal & Compliance Attributions
-
-- 🎵 Song audio previews are played directly from official 30-second streams via Apple Music and Deezer under standard non-commercial preview terms.
-- 🎬 Video clips are embedded through the official YouTube IFrame Player API.
-- 🚫 Zero unlicensed audio files are stored, converted, or rehosted.
+## ⚖️ Legal & Copyright Disclaimer
+Hummly is a non-commercial educational & trivia project for music enthusiasts. All audio previews (30 seconds) are streamed directly from official public content delivery networks under standard preview terms. Zero unlicensed audio is stored or redistributed.
