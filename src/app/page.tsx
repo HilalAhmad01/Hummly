@@ -84,12 +84,12 @@ const BOLLYWOOD_CATEGORIES: EraCategory[] = [
   {
     id: 'punjabi',
     title: 'Punjabi Songs',
-    subtitle: '90+ mega hits from Sidhu Moose Wala, Karan Aujla, Shubh & AP Dhillon',
-    eraBadge: '90+ Hits',
+    subtitle: '150+ chartbusters from Sidhu Moose Wala, Karan Aujla, Shubh, Diljit & AP Dhillon',
+    eraBadge: '150+ Tracks',
     icon: Flame,
     gradient: 'from-orange-500/20 via-red-500/10 to-transparent',
     borderColor: 'border-orange-500/30 hover:border-orange-500/60',
-    popularSongs: 'Karan Aujla, Sidhu Moose Wala, Shubh, AP Dhillon, Diljit Dosanjh',
+    popularSongs: 'Karan Aujla, Sidhu Moose Wala, Shubh, AP Dhillon, Diljit Dosanjh, Navaan Sandhu',
   },
   {
     id: 'party',
