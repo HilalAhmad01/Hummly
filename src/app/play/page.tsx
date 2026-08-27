@@ -184,6 +184,8 @@ function PlayGameContent() {
   // Handle Switching / Unlocking Stage Directly via Pill or Timeline Click
   const handleSelectStage = useCallback((targetStageIndex: number) => {
     if (!roundState || roundState.status !== 'playing') return;
+    // Anti-exploit check: Cannot go back to previous/shorter difficulty once a longer snippet is unlocked
+    if (targetStageIndex <= roundState.currentStageIndex) return;
 
     soundFX.playSkip();
     setRoundState((prev) => {
@@ -458,7 +460,7 @@ function PlayGameContent() {
                 <span>Snippet Length Tip:</span>
               </div>
               <p className="text-slate-400 leading-relaxed">
-                Click any difficulty pill (<strong className="text-[#C084FC]">0.2s</strong>, <strong className="text-[#FB7185]">0.8s</strong>, <strong className="text-[#F87171]">2.5s</strong>, <strong className="text-[#FBBF24]">5.0s</strong>, <strong className="text-[#34D399]">10.0s</strong>) to immediately switch and play that duration.
+                Click any unlocked difficulty pill (<strong className="text-[#C084FC]">0.2s</strong>, <strong className="text-[#FB7185]">0.8s</strong>, <strong className="text-[#F87171]">2.5s</strong>, <strong className="text-[#FBBF24]">5.0s</strong>, <strong className="text-[#34D399]">10.0s</strong>) to jump forward to that duration. Shorter difficulties are locked once a longer snippet is unlocked.
               </p>
             </div>
           </div>
@@ -470,17 +472,27 @@ function PlayGameContent() {
               <div className="flex items-center justify-center gap-2 w-full">
                 {[STAGE_PILLS[0], STAGE_PILLS[1], STAGE_PILLS[2]].map((pill) => {
                   const isActive = roundState.currentStageIndex === pill.id;
+                  const isPast = pill.id < roundState.currentStageIndex;
                   return (
                     <button
                       key={pill.name}
                       type="button"
                       onClick={() => handleSelectStage(pill.id)}
-                      className={`px-4 py-2 rounded-full font-bold text-xs sm:text-sm transition-all select-none border cursor-pointer hover:scale-105 active:scale-95 ${
+                      disabled={isPast || isActive}
+                      className={`px-4 py-2 rounded-full font-bold text-xs sm:text-sm transition-all select-none border ${
                         isActive
-                          ? 'bg-[#00E575] text-[#060A08] shadow-[0_0_20px_rgba(0,229,117,0.45)] border-[#00E575]'
-                          : `bg-[#131B17] ${pill.color} hover:bg-[#1C2721] border-white/5`
+                          ? 'bg-[#00E575] text-[#060A08] shadow-[0_0_20px_rgba(0,229,117,0.45)] border-[#00E575] cursor-default'
+                          : isPast
+                          ? 'bg-[#0A0E0C] text-slate-600 border-white/5 opacity-40 cursor-not-allowed'
+                          : `bg-[#131B17] ${pill.color} hover:bg-[#1C2721] border-white/5 cursor-pointer hover:scale-105 active:scale-95`
                       }`}
-                      title={`Switch snippet to ${pill.name} (${pill.duration})`}
+                      title={
+                        isPast
+                          ? `Locked: Already unlocked longer snippet`
+                          : isActive
+                          ? `Current: ${pill.name} (${pill.duration})`
+                          : `Switch snippet to ${pill.name} (${pill.duration})`
+                      }
                     >
                       <span>{pill.name}</span>
                       <span className="text-[10px] opacity-75 ml-1">({pill.duration})</span>
@@ -492,17 +504,27 @@ function PlayGameContent() {
               <div className="flex items-center justify-center gap-2 w-full">
                 {[STAGE_PILLS[3], STAGE_PILLS[4]].map((pill) => {
                   const isActive = roundState.currentStageIndex === pill.id;
+                  const isPast = pill.id < roundState.currentStageIndex;
                   return (
                     <button
                       key={pill.name}
                       type="button"
                       onClick={() => handleSelectStage(pill.id)}
-                      className={`px-4 py-2 rounded-full font-bold text-xs sm:text-sm transition-all select-none border cursor-pointer hover:scale-105 active:scale-95 ${
+                      disabled={isPast || isActive}
+                      className={`px-4 py-2 rounded-full font-bold text-xs sm:text-sm transition-all select-none border ${
                         isActive
-                          ? 'bg-[#00E575] text-[#060A08] shadow-[0_0_20px_rgba(0,229,117,0.45)] border-[#00E575]'
-                          : `bg-[#131B17] ${pill.color} hover:bg-[#1C2721] border-white/5`
+                          ? 'bg-[#00E575] text-[#060A08] shadow-[0_0_20px_rgba(0,229,117,0.45)] border-[#00E575] cursor-default'
+                          : isPast
+                          ? 'bg-[#0A0E0C] text-slate-600 border-white/5 opacity-40 cursor-not-allowed'
+                          : `bg-[#131B17] ${pill.color} hover:bg-[#1C2721] border-white/5 cursor-pointer hover:scale-105 active:scale-95`
                       }`}
-                      title={`Switch snippet to ${pill.name} (${pill.duration})`}
+                      title={
+                        isPast
+                          ? `Locked: Already unlocked longer snippet`
+                          : isActive
+                          ? `Current: ${pill.name} (${pill.duration})`
+                          : `Switch snippet to ${pill.name} (${pill.duration})`
+                      }
                     >
                       <span>{pill.name}</span>
                       <span className="text-[10px] opacity-75 ml-1">({pill.duration})</span>

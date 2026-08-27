@@ -22,6 +22,7 @@ interface MultiplayerPodiumProps {
   currentUserId: string;
   onPlayAgain: () => void;
   onLeaveRoom: () => void;
+  isProcessing?: boolean;
 }
 
 export default function MultiplayerPodium({
@@ -29,6 +30,7 @@ export default function MultiplayerPodium({
   currentUserId,
   onPlayAgain,
   onLeaveRoom,
+  isProcessing = false,
 }: MultiplayerPodiumProps) {
   // Sort players by totalScore descending
   const sortedPlayers: RoomPlayer[] = [...room.players].sort(
@@ -287,10 +289,11 @@ export default function MultiplayerPodium({
         {isHost ? (
           <button
             onClick={onPlayAgain}
-            className="w-full h-14 rounded-full bg-[#00E575] hover:bg-[#00F77F] text-[#060A08] font-black text-sm flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(0,229,117,0.35)] transition-all cursor-pointer"
+            disabled={isProcessing}
+            className="w-full h-14 rounded-full bg-[#00E575] hover:bg-[#00F77F] disabled:opacity-60 text-[#060A08] font-black text-sm flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(0,229,117,0.35)] transition-all cursor-pointer"
           >
-            <RotateCcw className="w-4 h-4" />
-            <span>Play Again (Same Room)</span>
+            <RotateCcw className={`w-4 h-4 ${isProcessing ? 'animate-spin' : ''}`} />
+            <span>{isProcessing ? 'Resetting Lobby...' : 'Play Again (Same Room)'}</span>
           </button>
         ) : (
           <div className="text-xs text-slate-400 text-center py-2">
@@ -300,7 +303,8 @@ export default function MultiplayerPodium({
 
         <button
           onClick={onLeaveRoom}
-          className="w-full h-14 rounded-full bg-[#16201B] hover:bg-[#1C2721] border border-white/10 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
+          disabled={isProcessing}
+          className="w-full h-14 rounded-full bg-[#16201B] hover:bg-[#1C2721] disabled:opacity-50 border border-white/10 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
         >
           <Home className="w-4 h-4" />
           <span>Exit to Main Menu</span>

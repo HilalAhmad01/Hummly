@@ -28,21 +28,32 @@ function SnippetProgressTrack({
         {SNIPPET_STAGES.map((stage, idx) => {
           const isUnlocked = idx <= currentStageIndex;
           const isCurrent = idx === currentStageIndex;
+          const isPast = idx < currentStageIndex;
 
           return (
             <button
               key={stage.stageNumber}
               type="button"
-              disabled={disabled}
-              onClick={() => onSelectStage?.(idx)}
-              className={`h-full flex-1 rounded-full transition-all duration-300 relative overflow-hidden cursor-pointer ${
-                isUnlocked
-                  ? isCurrent
-                    ? 'bg-[#00E575] shadow-[0_0_12px_rgba(0,229,117,0.5)]'
-                    : 'bg-[#00E575]/80 hover:bg-[#00E575]'
-                  : 'bg-[#18231E] hover:bg-[#202E27]'
+              disabled={disabled || isPast || isCurrent}
+              onClick={() => {
+                if (idx > currentStageIndex) {
+                  onSelectStage?.(idx);
+                }
+              }}
+              className={`h-full flex-1 rounded-full transition-all duration-300 relative overflow-hidden ${
+                isPast
+                  ? 'bg-[#00E575]/40 cursor-not-allowed opacity-60'
+                  : isCurrent
+                  ? 'bg-[#00E575] shadow-[0_0_12px_rgba(0,229,117,0.5)] cursor-default'
+                  : 'bg-[#18231E] hover:bg-[#202E27] cursor-pointer'
               }`}
-              title={`${stage.name} (${stage.durationSec}s) - Click to switch snippet length`}
+              title={
+                isPast
+                  ? `${stage.name} (${stage.durationSec}s) - Passed (Locked)`
+                  : isCurrent
+                  ? `${stage.name} (${stage.durationSec}s) - Current Active Snippet`
+                  : `${stage.name} (${stage.durationSec}s) - Click to unlock ${stage.durationSec}s snippet`
+              }
             >
               {/* Playback progress inside active stage */}
               {isUnlocked && isPlaying && isCurrent && (

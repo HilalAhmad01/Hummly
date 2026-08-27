@@ -141,24 +141,29 @@ export async function fetchRoomByCode(roomCode: string): Promise<MultiplayerRoom
           .eq('room_id', dbRoom.id)
           .order('joined_at', { ascending: true });
 
-        const { data: dbGuesses } = await (supabase.from('multiplayer_guesses') as any)
-          .select('*')
-          .eq('room_id', dbRoom.id)
-          .eq('round_number', dbRoom.current_round);
+        const isLobby = dbRoom.status === 'lobby';
+        const isFinished = dbRoom.status === 'finished';
 
         const guessMap: Record<string, PlayerRoundGuess> = {};
-        dbGuesses?.forEach((g: any) => {
-          guessMap[g.user_id] = {
-            userId: g.user_id,
-            username: '',
-            roundNumber: g.round_number,
-            stageIndex: g.stage_index,
-            isCorrect: g.is_correct,
-            scoreAwarded: g.score_awarded,
-            guessTitle: g.guess_title || undefined,
-            guessedAt: g.created_at,
-          };
-        });
+        if (!isLobby && !isFinished) {
+          const { data: dbGuesses } = await (supabase.from('multiplayer_guesses') as any)
+            .select('*')
+            .eq('room_id', dbRoom.id)
+            .eq('round_number', dbRoom.current_round);
+
+          dbGuesses?.forEach((g: any) => {
+            guessMap[g.user_id] = {
+              userId: g.user_id,
+              username: '',
+              roundNumber: g.round_number,
+              stageIndex: g.stage_index,
+              isCorrect: g.is_correct,
+              scoreAwarded: g.score_awarded,
+              guessTitle: g.guess_title || undefined,
+              guessedAt: g.created_at,
+            };
+          });
+        }
 
         const mappedPlayers: RoomPlayer[] = (dbPlayers || []).map((p: any) => ({
           id: p.id,
@@ -166,15 +171,19 @@ export async function fetchRoomByCode(roomCode: string): Promise<MultiplayerRoom
           username: p.username,
           avatarUrl: p.avatar_url || undefined,
           isHost: p.is_host,
-          isReady: p.is_ready,
-          totalScore: p.total_score,
-          correctCount: p.correct_count,
-          currentStreak: p.current_streak,
-          maxStreak: p.max_streak,
+          isReady: isLobby ? (p.is_host ? true : p.is_ready) : p.is_ready,
+          totalScore: isLobby ? 0 : p.total_score,
+          correctCount: isLobby ? 0 : p.correct_count,
+          currentStreak: isLobby ? 0 : p.current_streak,
+          maxStreak: isLobby ? 0 : p.max_streak,
           joinedAt: p.joined_at,
-          roundStatus: guessMap[p.user_id] ? (guessMap[p.user_id].isCorrect ? 'guessed' : 'skipped') : 'thinking',
-          lastGuessCorrect: guessMap[p.user_id]?.isCorrect,
-          lastRoundScore: guessMap[p.user_id]?.scoreAwarded,
+          roundStatus: isLobby || isFinished
+            ? 'thinking'
+            : guessMap[p.user_id]
+            ? (guessMap[p.user_id].isCorrect ? 'guessed' : 'skipped')
+            : 'thinking',
+          lastGuessCorrect: isLobby || isFinished ? undefined : guessMap[p.user_id]?.isCorrect,
+          lastRoundScore: isLobby || isFinished ? 0 : guessMap[p.user_id]?.scoreAwarded,
         }));
 
         const dbStatus = dbRoom.status as RoomStatus;
@@ -183,7 +192,7 @@ export async function fetchRoomByCode(roomCode: string): Promise<MultiplayerRoom
           mappedPlayers.every((p) => Boolean(guessMap[p.userId]));
 
         const computedStatus: RoomStatus =
-          dbStatus === 'playing' && allPlayersGuessed ? 'revealing' : dbStatus;
+          !isLobby && !isFinished && dbStatus === 'playing' && allPlayersGuessed ? 'revealing' : dbStatus;
 
         if (dbStatus === 'playing' && allPlayersGuessed) {
           // Self-heal room status in DB
@@ -497,7 +506,8 @@ export function togglePlayerReadyState(room: MultiplayerRoom, userId: string): M
   return updated;
 }
 
-export function startMultiplayerGame(room: MultiplayerRoom): MultiplayerRoom {
+export async function startMultiplayerGame(room: MultiplayerRoom): Promise<MultiplayerRoom> {
+  const now = new Date().toISOString();
   const updated: MultiplayerRoom = {
     ...room,
     status: 'playing',
@@ -509,14 +519,23 @@ export function startMultiplayerGame(room: MultiplayerRoom): MultiplayerRoom {
       lastGuessCorrect: undefined,
       lastRoundScore: 0,
     })),
+    updatedAt: now,
   };
 
   const supabase = createClient();
   if (supabase && isSupabaseConfigured) {
-    (supabase.from('multiplayer_rooms') as any)
-      .update({ status: 'playing', current_round: 1 })
-      .eq('id', room.id)
-      .then();
+    try {
+      await (supabase.from('multiplayer_rooms') as any)
+        .update({ status: 'playing', current_round: 1, updated_at: now })
+        .eq('id', room.id);
+
+      // Clean up previous guesses
+      await (supabase.from('multiplayer_guesses') as any)
+        .delete()
+        .eq('room_id', room.id);
+    } catch (err) {
+      console.warn('Supabase start match update error:', err);
+    }
   }
 
   broadcastRoomState(updated);
@@ -650,18 +669,20 @@ export function forceRevealMultiplayerRound(room: MultiplayerRoom): MultiplayerR
 
 export function advanceToNextMultiplayerRound(room: MultiplayerRoom): MultiplayerRoom {
   const nextRoundNumber = room.currentRound + 1;
+  const now = new Date().toISOString();
 
   if (nextRoundNumber > room.totalRounds || nextRoundNumber > room.playlist.length) {
     // Finish Match -> Victory Podium
     const finishedRoom: MultiplayerRoom = {
       ...room,
       status: 'finished',
+      updatedAt: now,
     };
 
     const supabase = createClient();
     if (supabase && isSupabaseConfigured) {
       (supabase.from('multiplayer_rooms') as any)
-        .update({ status: 'finished' })
+        .update({ status: 'finished', updated_at: now })
         .eq('id', room.id)
         .then();
     }
@@ -681,6 +702,7 @@ export function advanceToNextMultiplayerRound(room: MultiplayerRoom): Multiplaye
       lastGuessCorrect: undefined,
       lastRoundScore: 0,
     })),
+    updatedAt: now,
   };
 
   const supabase = createClient();
@@ -689,6 +711,7 @@ export function advanceToNextMultiplayerRound(room: MultiplayerRoom): Multiplaye
       .update({
         current_round: nextRoundNumber,
         status: 'playing',
+        updated_at: now,
       })
       .eq('id', room.id)
       .then();
@@ -698,8 +721,9 @@ export function advanceToNextMultiplayerRound(room: MultiplayerRoom): Multiplaye
   return nextRoom;
 }
 
-export function resetMultiplayerGameToLobby(room: MultiplayerRoom): MultiplayerRoom {
+export async function resetMultiplayerGameToLobby(room: MultiplayerRoom): Promise<MultiplayerRoom> {
   const newPlaylist = pickMultiplayerPlaylist(room.eraFilter);
+  const now = new Date().toISOString();
   const resetRoom: MultiplayerRoom = {
     ...room,
     status: 'lobby',
@@ -717,29 +741,53 @@ export function resetMultiplayerGameToLobby(room: MultiplayerRoom): MultiplayerR
       lastGuessCorrect: undefined,
       lastRoundScore: 0,
     })),
+    updatedAt: now,
   };
 
   const supabase = createClient();
   if (supabase && isSupabaseConfigured) {
-    (supabase.from('multiplayer_rooms') as any)
-      .update({
-        status: 'lobby',
-        current_round: 1,
-        playlist: newPlaylist as unknown as import('@/lib/supabase/database.types').Json,
-      })
-      .eq('id', room.id)
-      .then();
+    try {
+      // 1. Reset Room to Lobby with new playlist
+      await (supabase.from('multiplayer_rooms') as any)
+        .update({
+          status: 'lobby',
+          current_round: 1,
+          playlist: newPlaylist as unknown as import('@/lib/supabase/database.types').Json,
+          updated_at: now,
+        })
+        .eq('id', room.id);
 
-    (supabase.from('multiplayer_players') as any)
-      .update({
-        total_score: 0,
-        correct_count: 0,
-        current_streak: 0,
-        max_streak: 0,
-        is_ready: false,
-      })
-      .eq('room_id', room.id)
-      .then();
+      // 2. Clear all previous guesses from the room
+      await (supabase.from('multiplayer_guesses') as any)
+        .delete()
+        .eq('room_id', room.id);
+
+      // 3. Reset host in DB
+      await (supabase.from('multiplayer_players') as any)
+        .update({
+          total_score: 0,
+          correct_count: 0,
+          current_streak: 0,
+          max_streak: 0,
+          is_ready: true,
+        })
+        .eq('room_id', room.id)
+        .eq('user_id', room.hostId);
+
+      // 4. Reset non-host players in DB
+      await (supabase.from('multiplayer_players') as any)
+        .update({
+          total_score: 0,
+          correct_count: 0,
+          current_streak: 0,
+          max_streak: 0,
+          is_ready: false,
+        })
+        .eq('room_id', room.id)
+        .neq('user_id', room.hostId);
+    } catch (err) {
+      console.warn('Supabase reset room error:', err);
+    }
   }
 
   broadcastRoomState(resetRoom);

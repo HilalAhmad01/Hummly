@@ -134,7 +134,9 @@ function MultiplayerContent() {
             prev.status !== fresh.status ||
             prev.currentRound !== fresh.currentRound ||
             Object.keys(prev.currentRoundGuesses).length !== Object.keys(fresh.currentRoundGuesses).length ||
-            prev.players.some((p, i) => p.isReady !== fresh.players[i]?.isReady)
+            prev.players.some((p, i) => p.isReady !== fresh.players[i]?.isReady) ||
+            prev.players.some((p, i) => p.totalScore !== fresh.players[i]?.totalScore) ||
+            prev.updatedAt !== fresh.updatedAt
           ) {
             return fresh;
           }
@@ -212,10 +214,17 @@ function MultiplayerContent() {
   };
 
   // Handler: Start Match (Host only)
-  const handleStartGame = () => {
-    if (!activeRoom) return;
-    const updated = startMultiplayerGame(activeRoom);
-    setActiveRoom(updated);
+  const handleStartGame = async () => {
+    if (!activeRoom || isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const updated = await startMultiplayerGame(activeRoom);
+      setActiveRoom(updated);
+    } catch (err) {
+      console.error('Error starting match:', err);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Handler: Submit Guess
@@ -245,10 +254,18 @@ function MultiplayerContent() {
   };
 
   // Handler: Play Again (Same Room)
-  const handlePlayAgain = () => {
-    if (!activeRoom) return;
-    const updated = resetMultiplayerGameToLobby(activeRoom);
-    setActiveRoom(updated);
+  const handlePlayAgain = async () => {
+    if (!activeRoom || isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const updated = await resetMultiplayerGameToLobby(activeRoom);
+      setActiveRoom(updated);
+      soundFX.playCorrect();
+    } catch (err) {
+      console.error('Error resetting multiplayer game:', err);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Handler: Leave Room
@@ -337,6 +354,7 @@ function MultiplayerContent() {
           currentUserId={currentUser.id}
           onPlayAgain={handlePlayAgain}
           onLeaveRoom={handleLeaveRoom}
+          isProcessing={isProcessing}
         />
       );
     }

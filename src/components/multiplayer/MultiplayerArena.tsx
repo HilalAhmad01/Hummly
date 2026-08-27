@@ -134,9 +134,12 @@ export default function MultiplayerArena({
   // Handle stage switch
   const handleSelectStage = useCallback((targetStageIndex: number) => {
     if (hasUserGuessed || isRevealing) return;
+    // Anti-exploit check: Cannot go back to previous/shorter difficulty once a longer snippet is unlocked
+    if (targetStageIndex <= currentStageIndex) return;
+
     soundFX.playSkip();
     setCurrentStageIndex(targetStageIndex);
-  }, [hasUserGuessed, isRevealing]);
+  }, [hasUserGuessed, isRevealing, currentStageIndex]);
 
   // Handle User Guess Submission
   const handleSelectGuess = (guessedSong: SearchableSong) => {
@@ -402,17 +405,27 @@ export default function MultiplayerArena({
             <div className="flex items-center justify-center gap-2 w-full">
               {[STAGE_PILLS[0], STAGE_PILLS[1], STAGE_PILLS[2]].map((pill) => {
                 const isActive = currentStageIndex === pill.id;
+                const isPast = pill.id < currentStageIndex;
                 return (
                   <button
                     key={pill.name}
                     type="button"
                     onClick={() => handleSelectStage(pill.id)}
-                    disabled={hasUserGuessed}
-                    className={`px-4 py-2 rounded-full font-bold text-xs sm:text-sm transition-all select-none border cursor-pointer hover:scale-105 active:scale-95 ${
+                    disabled={hasUserGuessed || isPast || isActive}
+                    className={`px-4 py-2 rounded-full font-bold text-xs sm:text-sm transition-all select-none border ${
                       isActive
-                        ? 'bg-[#00E575] text-[#060A08] shadow-[0_0_20px_rgba(0,229,117,0.45)] border-[#00E575]'
-                        : `bg-[#131B17] ${pill.color} hover:bg-[#1C2721] border-white/5`
+                        ? 'bg-[#00E575] text-[#060A08] shadow-[0_0_20px_rgba(0,229,117,0.45)] border-[#00E575] cursor-default'
+                        : isPast
+                        ? 'bg-[#0A0E0C] text-slate-600 border-white/5 opacity-40 cursor-not-allowed'
+                        : `bg-[#131B17] ${pill.color} hover:bg-[#1C2721] border-white/5 cursor-pointer hover:scale-105 active:scale-95`
                     }`}
+                    title={
+                      isPast
+                        ? `Locked: Already unlocked longer snippet`
+                        : isActive
+                        ? `Current: ${pill.name} (${pill.duration})`
+                        : `Switch snippet to ${pill.name} (${pill.duration})`
+                    }
                   >
                     <span>{pill.name}</span>
                     <span className="text-[10px] opacity-75 ml-1">({pill.duration})</span>
@@ -424,17 +437,27 @@ export default function MultiplayerArena({
             <div className="flex items-center justify-center gap-2 w-full">
               {[STAGE_PILLS[3], STAGE_PILLS[4]].map((pill) => {
                 const isActive = currentStageIndex === pill.id;
+                const isPast = pill.id < currentStageIndex;
                 return (
                   <button
                     key={pill.name}
                     type="button"
                     onClick={() => handleSelectStage(pill.id)}
-                    disabled={hasUserGuessed}
-                    className={`px-4 py-2 rounded-full font-bold text-xs sm:text-sm transition-all select-none border cursor-pointer hover:scale-105 active:scale-95 ${
+                    disabled={hasUserGuessed || isPast || isActive}
+                    className={`px-4 py-2 rounded-full font-bold text-xs sm:text-sm transition-all select-none border ${
                       isActive
-                        ? 'bg-[#00E575] text-[#060A08] shadow-[0_0_20px_rgba(0,229,117,0.45)] border-[#00E575]'
-                        : `bg-[#131B17] ${pill.color} hover:bg-[#1C2721] border-white/5`
+                        ? 'bg-[#00E575] text-[#060A08] shadow-[0_0_20px_rgba(0,229,117,0.45)] border-[#00E575] cursor-default'
+                        : isPast
+                        ? 'bg-[#0A0E0C] text-slate-600 border-white/5 opacity-40 cursor-not-allowed'
+                        : `bg-[#131B17] ${pill.color} hover:bg-[#1C2721] border-white/5 cursor-pointer hover:scale-105 active:scale-95`
                     }`}
+                    title={
+                      isPast
+                        ? `Locked: Already unlocked longer snippet`
+                        : isActive
+                        ? `Current: ${pill.name} (${pill.duration})`
+                        : `Switch snippet to ${pill.name} (${pill.duration})`
+                    }
                   >
                     <span>{pill.name}</span>
                     <span className="text-[10px] opacity-75 ml-1">({pill.duration})</span>
