@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Hummly Banner](https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200&auto=format&fit=crop&q=80)
+<img src="./ss/homepage.png" alt="Hummly Preview" width="100%" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);" />
 
 **Listen to short mystery snippets, guess the track in stages, and battle your friends in real-time.**  
 Featuring **750+ curated Bollywood, Punjabi, Retro, Party, and Romantic hits**!
