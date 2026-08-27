@@ -105,11 +105,11 @@ const BOLLYWOOD_CATEGORIES: EraCategory[] = [
     id: 'romance',
     title: 'Romantic Melodies',
     subtitle: 'Soulful love ballads and unforgettable acoustic melodies',
-    eraBadge: 'Love Songs',
+    eraBadge: '100+ Love Songs',
     icon: Heart,
     gradient: 'from-pink-500/20 via-rose-500/10 to-transparent',
     borderColor: 'border-pink-500/30 hover:border-pink-500/60',
-    popularSongs: 'Tum Se Hi, Agar Tum Saath Ho, Raataan Lambiyan, Hawayein',
+    popularSongs: 'Tum Hi Ho, Kesariya, Pehli Nazar Mein, Choo Lo, Tu Jaane Na, Soniyo',
   },
 ];
 
