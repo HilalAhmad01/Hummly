@@ -34,6 +34,7 @@ const ERA_LABELS: Record<BollywoodEra, string> = {
   '2010s': 'Golden 2010s',
   '2000s': 'Nostalgic 2000s',
   '90s': '90s Retro Classics',
+  retro: '70s & 80s Golden Era',
   party: 'Party & Dance Bangers',
   romance: 'Romantic Melodies',
 };

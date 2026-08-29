@@ -1,4 +1,4 @@
-export type BollywoodEra = 'all' | '2020s' | '2010s' | '2000s' | '90s' | 'party' | 'romance' | 'punjabi';
+export type BollywoodEra = 'all' | '2020s' | '2010s' | '2000s' | '90s' | 'retro' | 'party' | 'romance' | 'punjabi';
 
 export interface SnippetStage {
   stageNumber: number;

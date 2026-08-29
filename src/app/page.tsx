@@ -82,6 +82,16 @@ const BOLLYWOOD_CATEGORIES: EraCategory[] = [
     popularSongs: 'Tujhe Dekha Toh, Pehla Nasha, Chaiyya Chaiyya, Baazigar',
   },
   {
+    id: 'retro',
+    title: '70s & 80s Golden Era',
+    subtitle: 'Kishore Kumar, R.D. Burman, Mohammed Rafi & Lata timeless hits',
+    eraBadge: '1970 - 1989',
+    icon: Sparkles,
+    gradient: 'from-amber-600/20 via-yellow-600/10 to-transparent',
+    borderColor: 'border-amber-600/30 hover:border-amber-500/60',
+    popularSongs: 'O Mere Dil Ke Chain, Lag Ja Gale, Yeh Sham Mastani, Pal Pal Dil Ke Paas',
+  },
+  {
     id: 'punjabi',
     title: 'Punjabi Songs',
     subtitle: '150+ chartbusters from Sidhu Moose Wala, Karan Aujla, Shubh, Diljit & AP Dhillon',

@@ -42,6 +42,7 @@ const ERA_OPTIONS: { id: BollywoodEra; label: string; icon: string; desc: string
   { id: '2010s', label: 'Golden 2010s', icon: '🎸', desc: 'Arijit Singh, Pritam & YJHD melodies' },
   { id: '2000s', label: 'Nostalgic 2000s', icon: '🎧', desc: 'KK, Sonu Nigam & Y2K evergreen gold' },
   { id: '90s', label: '90s Retro Classics', icon: '📻', desc: 'DDLJ, Kumar Sanu & Alka Yagnik classics' },
+  { id: 'retro', label: '70s & 80s Golden Era', icon: '🎙️', desc: 'Kishore Kumar, R.D. Burman, Rafi & Lata timeless hits' },
   { id: 'party', label: 'Party & Dance', icon: '💃', desc: 'Club bangers, sangeet & celebration anthems' },
   { id: 'romance', label: 'Romantic Melodies', icon: '💖', desc: 'Soulful love ballads & acoustic tunes' },
 ];
