@@ -3285,7 +3285,7 @@ export const CURATED_BOLLYWOOD_SONGS: Song[] = [
     "language": "hindi",
     "era": "2000s",
     "theme": "dance",
-    "deezer_preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/35/bc/cd/35bccdbb-e58c-f554-991f-42ec83707efa/mzaf_16665949078264631811.plus.aac.p.m4a",
+    "deezer_preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/3e/fa/35/3efa35a2-019e-8fa0-2b1f-659cc07510a4/mzaf_5500861861649567366.plus.aac.p.m4a",
     "cover_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80",
     "youtube_video_id": "y0eC4yG7l-k",
     "is_active": true
@@ -4208,9 +4208,9 @@ export const CURATED_BOLLYWOOD_SONGS: Song[] = [
     "language": "hindi",
     "era": "2010s",
     "theme": "party",
-    "deezer_preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/92/d4/30/92d430e8-f2a0-3479-f5fe-f1607b8840ca/mzaf_568248647279520305.plus.aac.p.m4a",
+    "deezer_preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/1a/44/fb/1a44fbe0-5172-ddad-8e53-5510ad7dcff9/mzaf_11119624523547880630.plus.aac.p.m4a",
     "youtube_video_id": "k1Bq_3L4K_0",
-    "cover_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80",
+    "cover_url": "https://is1-ssl.mzstatic.com/image/thumb/Music71/v4/81/0b/a4/810ba47e-952c-8818-ad3c-9899b4928cd4/8902894354943_cover.jpg/600x600bb.jpg",
     "is_active": true
   },
   {
