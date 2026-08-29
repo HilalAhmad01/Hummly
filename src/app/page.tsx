@@ -134,8 +134,7 @@ export default function HomePage() {
         </h1>
 
         <p className="max-w-2xl text-slate-300 text-base sm:text-lg mt-5 font-medium leading-relaxed">
-          Listen to progressive mystery audio snippets unlocking from 0.2s up to 10s.
-          Play solo instantly or host a real-time 5-player room with friends to compete for the podium!
+          Guess songs from short mystery snippets. Play solo or battle up to 5 friends live.
         </p>
 
         {/* 5-Stage Progressive Difficulty Preview */}

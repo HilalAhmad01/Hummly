@@ -52,10 +52,8 @@ export default function Footer() {
 
       {/* Bottom Row */}
       <div className="max-w-6xl mx-auto mt-6 pt-5 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px]">
-        <p className="text-slate-400 flex items-center gap-1.5 justify-center">
-          <span>&copy; {new Date().getFullYear()} Hummly. Built with</span>
-          <Heart className="w-3 h-3 text-rose-500 inline fill-rose-500" />
-          <span>for music lovers everywhere.</span>
+        <p className="text-slate-500 font-medium">
+          &copy; {new Date().getFullYear()} Hummly. All rights reserved.
         </p>
 
         <div className="flex items-center gap-5 text-slate-400">
