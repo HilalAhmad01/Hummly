@@ -8,10 +8,17 @@ import {
   SNIPPET_STAGES,
 } from '@/types/game';
 import { isGuessCorrect } from '@/lib/search-engine';
-import { calculateStageScore, getStreakMultiplierText } from '@/lib/scoring';
+import {
+  calculateStageScore,
+  calculateFastestFingerScore,
+  getStreakMultiplierText,
+} from '@/lib/scoring';
 import { soundFX } from '@/lib/sound-effects';
 import { getOptimizedCoverUrl, preloadImage } from '@/lib/image-utils';
-import { forceRevealMultiplayerRound } from '@/lib/multiplayer-service';
+import {
+  forceRevealMultiplayerRound,
+  timeoutFastestFingerRound,
+} from '@/lib/multiplayer-service';
 import AudioPlayer, { AudioPlayerHandle } from '@/components/game/AudioPlayer';
 import SongSearchBar from '@/components/game/SongSearchBar';
 import SnippetProgressTrack from '@/components/game/SnippetProgressTrack';
@@ -27,12 +34,21 @@ import {
   Users,
   Trophy,
   Radio,
+  Zap,
+  Lock,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface MultiplayerArenaProps {
   room: MultiplayerRoom;
   currentUserId: string;
-  onSubmitGuess: (stageIndex: number, isCorrect: boolean, scoreAwarded: number, guessTitle: string) => void;
+  onSubmitGuess: (
+    stageIndex: number,
+    isCorrect: boolean,
+    scoreAwarded: number,
+    guessTitle: string,
+    guessTimeSeconds?: number
+  ) => void;
   onAdvanceRound: () => void;
 }
 
@@ -52,6 +68,7 @@ export default function MultiplayerArena({
 }: MultiplayerArenaProps) {
   const audioPlayerRef = useRef<AudioPlayerHandle | null>(null);
 
+  const isFastestFinger = room.gameMode === 'fastest_finger';
   const currentSongIndex = room.currentRound - 1;
   const currentSong: Song | undefined = room.playlist[currentSongIndex];
 
@@ -63,6 +80,14 @@ export default function MultiplayerArena({
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
   const [isWrongAttemptFlash, setIsWrongAttemptFlash] = useState<boolean>(false);
   const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Synchronized 3-2-1 Get Ready Countdown Gate (Zero host advantage)
+  const [syncGateRemaining, setSyncGateRemaining] = useState<number | null>(null);
+  const syncGateBeepRef = useRef<number>(-1);
+
+  // Fastest Finger First 10s Timer State
+  const [fffTimeRemaining, setFffTimeRemaining] = useState<number>(10.0);
+  const [lockoutRemainingSec, setLockoutRemainingSec] = useState<number>(0);
 
   // Check if current user has already guessed this round
   const myGuess = room.currentRoundGuesses[currentUserId];
@@ -78,12 +103,88 @@ export default function MultiplayerArena({
     onAdvanceRoundRef.current = onAdvanceRound;
   });
 
-  // Fallback: If all joined players locked in their guesses, auto-trigger reveal state
+  // Find round winner in Fastest Finger First
+  const fffWinnerGuess = Object.values(room.currentRoundGuesses).find(
+    (g) => g.isFastestFingerWinner || (isFastestFinger && g.isCorrect)
+  );
+
+  // Synchronized 3-2-1 Pre-Buffering Gate Loop
   useEffect(() => {
-    if (room.status === 'playing' && totalPlayersCount > 0 && finishedCount >= totalPlayersCount) {
+    if (isRevealing || room.status !== 'playing') {
+      setSyncGateRemaining(null);
+      return;
+    }
+
+    if (!room.roundStartTime || !isFastestFinger) {
+      setSyncGateRemaining(null);
+      return;
+    }
+
+    const checkSyncGate = () => {
+      const now = Date.now();
+      const diffMs = room.roundStartTime! - now;
+
+      if (diffMs > 0) {
+        const sec = Math.ceil(diffMs / 1000);
+        setSyncGateRemaining(sec);
+
+        if (syncGateBeepRef.current !== sec) {
+          syncGateBeepRef.current = sec;
+          soundFX.playCountdownBeep(false);
+        }
+      } else {
+        if (syncGateRemaining !== null) {
+          setSyncGateRemaining(0);
+          soundFX.playCountdownBeep(true);
+          setTimeout(() => setSyncGateRemaining(null), 600);
+        }
+      }
+    };
+
+    checkSyncGate();
+    const interval = setInterval(checkSyncGate, 100);
+    return () => clearInterval(interval);
+  }, [room.roundStartTime, room.status, isRevealing, isFastestFinger, syncGateRemaining]);
+
+  // 10s Live Countdown Timer in Fastest Finger First mode
+  useEffect(() => {
+    if (!isFastestFinger || isRevealing || room.status !== 'playing' || syncGateRemaining !== null) {
+      return;
+    }
+
+    const startTime = room.roundStartTime || Date.now();
+
+    const interval = setInterval(() => {
+      const elapsedMs = Date.now() - startTime;
+      const remainingSec = Math.max(0, 10.0 - elapsedMs / 1000);
+      setFffTimeRemaining(Number(remainingSec.toFixed(1)));
+
+      if (remainingSec <= 0) {
+        clearInterval(interval);
+        if (isHost && room.status === 'playing') {
+          timeoutFastestFingerRound(room);
+        }
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [isFastestFinger, isRevealing, room.status, room.roundStartTime, syncGateRemaining, isHost, room]);
+
+  // Lockout countdown timer for wrong guesses in FFF
+  useEffect(() => {
+    if (lockoutRemainingSec <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutRemainingSec((prev) => Math.max(0, Number((prev - 0.1).toFixed(1))));
+    }, 100);
+    return () => clearInterval(timer);
+  }, [lockoutRemainingSec]);
+
+  // Fallback: If all joined players locked in their guesses, auto-trigger reveal state (classic mode)
+  useEffect(() => {
+    if (!isFastestFinger && room.status === 'playing' && totalPlayersCount > 0 && finishedCount >= totalPlayersCount) {
       forceRevealMultiplayerRound(room);
     }
-  }, [room.status, finishedCount, totalPlayersCount, room]);
+  }, [isFastestFinger, room.status, finishedCount, totalPlayersCount, room]);
 
   // Auto-advance countdown timer when revealing
   const [countdown, setCountdown] = useState<number>(6);
@@ -109,18 +210,21 @@ export default function MultiplayerArena({
     return () => clearInterval(timer);
   }, [isRevealing, isHost]);
 
-  // Track previous round to ONLY reset stage when the round actually changes
+  // Track previous round to ONLY reset stage & timers when the round actually changes
   const prevRoundRef = useRef(room.currentRound);
   useEffect(() => {
     if (prevRoundRef.current !== room.currentRound) {
       prevRoundRef.current = room.currentRound;
       setCurrentStageIndex(0);
       setCurrentAudioProgressTime(0);
+      setFffTimeRemaining(10.0);
+      setLockoutRemainingSec(0);
+      syncGateBeepRef.current = -1;
       setIsPlayingAudio(true);
     }
   }, [room.currentRound]);
 
-  // Preload cover artwork in the background
+  // Preload cover artwork and next song in the background
   useEffect(() => {
     if (currentSong?.cover_url) {
       preloadImage(currentSong.cover_url);
@@ -129,12 +233,11 @@ export default function MultiplayerArena({
     if (nextSong?.cover_url) {
       preloadImage(nextSong.cover_url);
     }
-  }, [room.currentRound, currentSong?.id]);
+  }, [room.currentRound, currentSong?.id, room.playlist]);
 
-  // Handle stage switch
+  // Handle stage switch (Classic mode)
   const handleSelectStage = useCallback((targetStageIndex: number) => {
     if (hasUserGuessed || isRevealing) return;
-    // Anti-exploit check: Cannot go back to previous/shorter difficulty once a longer snippet is unlocked
     if (targetStageIndex <= currentStageIndex) return;
 
     soundFX.playSkip();
@@ -143,11 +246,33 @@ export default function MultiplayerArena({
 
   // Handle User Guess Submission
   const handleSelectGuess = (guessedSong: SearchableSong) => {
-    if (!currentSong || hasUserGuessed || isRevealing) return;
+    if (!currentSong || hasUserGuessed || isRevealing || lockoutRemainingSec > 0 || syncGateRemaining !== null) return;
 
     const isCorrect = isGuessCorrect(guessedSong, currentSong.id, currentSong.title);
     const currentStreak = currentPlayer?.currentStreak || 0;
 
+    if (isFastestFinger) {
+      const now = Date.now();
+      const start = room.roundStartTime || now;
+      const elapsedSec = Math.max(0.1, (now - start) / 1000);
+
+      if (isCorrect) {
+        const newStreak = currentStreak + 1;
+        const scoreCalc = calculateFastestFingerScore(elapsedSec, newStreak);
+        soundFX.playCorrect();
+        soundFX.playSnatch();
+        onSubmitGuess(0, true, scoreCalc.finalScore, guessedSong.title, scoreCalc.responseTime);
+      } else {
+        soundFX.playWrong();
+        setIsWrongAttemptFlash(true);
+        setLockoutRemainingSec(1.5); // 1.5s lockout cooldown against spamming
+        if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+        flashTimeoutRef.current = setTimeout(() => setIsWrongAttemptFlash(false), 500);
+      }
+      return;
+    }
+
+    // Classic Stage Mode
     if (isCorrect) {
       const newStreak = currentStreak + 1;
       const scoreCalc = calculateStageScore(currentStageIndex, newStreak);
@@ -160,19 +285,23 @@ export default function MultiplayerArena({
       flashTimeoutRef.current = setTimeout(() => setIsWrongAttemptFlash(false), 500);
 
       if (currentStageIndex < 4) {
-        // Unlock next stage
         setCurrentStageIndex((prev) => prev + 1);
       } else {
-        // Run out of attempts / reveal for user
         onSubmitGuess(currentStageIndex, false, 0, guessedSong.title);
       }
     }
   };
 
-  // Handle Skip / Give up
+  // Handle Skip / Pass
   const handleSkip = () => {
-    if (!currentSong || hasUserGuessed || isRevealing) return;
+    if (!currentSong || hasUserGuessed || isRevealing || syncGateRemaining !== null) return;
     soundFX.playSkip();
+
+    if (isFastestFinger) {
+      // In FFF, passing locks you out for the round
+      onSubmitGuess(0, false, 0, 'Passed / Skipped');
+      return;
+    }
 
     if (currentStageIndex < 4) {
       setCurrentStageIndex((prev) => prev + 1);
@@ -180,6 +309,7 @@ export default function MultiplayerArena({
       onSubmitGuess(currentStageIndex, false, 0, 'Passed / Skipped');
     }
   };
+
 
   const getSkipButtonLabel = () => {
     if (currentStageIndex === 0) return 'Skip & Unlock 0.8s (Expert)';
@@ -196,7 +326,31 @@ export default function MultiplayerArena({
   if (!currentSong) return null;
 
   return (
-    <div className="w-full flex-1 max-w-5xl mx-auto px-4 py-4 flex flex-col items-center justify-between gap-4">
+    <div className="w-full flex-1 max-w-5xl mx-auto px-4 py-4 flex flex-col items-center justify-between gap-4 relative">
+      {/* Synchronized 3-2-1 Get Ready Countdown Gate Overlay */}
+      {syncGateRemaining !== null && (
+        <div className="fixed inset-0 z-50 bg-[#060A08]/90 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-200">
+          <div className="flex flex-col items-center text-center gap-4">
+            <div className="px-4 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+              <Zap className="w-4 h-4 animate-bounce" />
+              <span>Fastest Finger First • Round {room.currentRound}</span>
+            </div>
+
+            <div className="font-mono font-black text-7xl sm:text-9xl text-white tracking-tighter animate-pulse scale-110 drop-shadow-[0_0_50px_rgba(0,229,117,0.5)]">
+              {syncGateRemaining === 0 ? (
+                <span className="text-[#00E575]">GO!</span>
+              ) : (
+                syncGateRemaining
+              )}
+            </div>
+
+            <p className="text-slate-400 text-sm font-medium">
+              Audio is pre-buffering. Guess the song first to win the points!
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Top Header Status Bar */}
       <div className="w-full bg-[#111714] border border-white/5 rounded-3xl p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-3">
@@ -211,6 +365,13 @@ export default function MultiplayerArena({
               {room.currentRound} / {room.totalRounds}
             </span>
           </div>
+
+          {isFastestFinger && (
+            <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 font-bold text-[11px]">
+              <Zap className="w-3 h-3 text-amber-400" />
+              <span>Fastest Finger First</span>
+            </span>
+          )}
         </div>
 
         {/* Live Leaderboard Strip */}
@@ -233,7 +394,7 @@ export default function MultiplayerArena({
       <div className="w-full bg-[#111714] border border-white/5 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 px-2">
           <Users className="w-3.5 h-3.5 text-[#00E575]" />
-          <span>Round Status:</span>
+          <span>{isFastestFinger ? 'Players Racing:' : 'Round Status:'}</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -247,7 +408,7 @@ export default function MultiplayerArena({
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs transition-all ${
                   guess
                     ? guess.isCorrect
-                      ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+                      ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300 ring-2 ring-emerald-500/20'
                       : 'bg-rose-950/60 border-rose-500/40 text-rose-300'
                     : isYou
                     ? 'bg-[#18231E] border-[#00E575]/40 text-slate-200'
@@ -268,7 +429,8 @@ export default function MultiplayerArena({
 
                 {guess ? (
                   guess.isCorrect ? (
-                    <span className="font-mono text-[10px] text-[#00E575] font-black">
+                    <span className="font-mono text-[10px] text-[#00E575] font-black flex items-center gap-0.5">
+                      {isFastestFinger && <Zap className="w-2.5 h-2.5" />}
                       +{guess.scoreAwarded}
                     </span>
                   ) : (
@@ -285,7 +447,11 @@ export default function MultiplayerArena({
         </div>
 
         <div className="text-[11px] font-mono text-slate-400 px-2 font-bold">
-          {finishedCount}/{totalPlayersCount} Locked In
+          {isFastestFinger
+            ? fffWinnerGuess
+              ? '⚡ Snatch Claimed!'
+              : '⚡ Race In Progress'
+            : `${finishedCount}/${totalPlayersCount} Locked In`}
         </div>
       </div>
 
@@ -293,10 +459,30 @@ export default function MultiplayerArena({
       {isRevealing ? (
         /* Synchronous Round Reveal Card */
         <div className="w-full max-w-xl bg-[#111714] border border-[#00E575]/40 rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center shadow-[0_0_40px_rgba(0,229,117,0.15)] my-auto animate-in fade-in zoom-in-95 duration-300">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#00E575]/10 text-[#00E575] text-xs font-bold uppercase tracking-wider mb-4 border border-[#00E575]/20">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Round {room.currentRound} Results</span>
-          </div>
+          {/* Fastest Finger Winner Banner or Results Badge */}
+          {isFastestFinger ? (
+            fffWinnerGuess ? (
+              <div className="w-full bg-gradient-to-r from-amber-500/20 via-[#00E575]/20 to-amber-500/20 border border-[#00E575]/40 rounded-2xl p-4 mb-5 flex items-center justify-center gap-3 animate-pulse">
+                <Crown className="w-6 h-6 text-amber-400 shrink-0" />
+                <div className="text-left">
+                  <p className="text-xs uppercase tracking-wider font-bold text-amber-300">Fastest Finger Winner!</p>
+                  <p className="text-sm sm:text-base font-black text-white">
+                    <span className="text-[#00E575]">{fffWinnerGuess.username}</span> guessed in{' '}
+                    <span className="font-mono text-amber-400">{fffWinnerGuess.guessTimeSeconds ?? '1.8'}s</span> (+{fffWinnerGuess.scoreAwarded} pts)
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="w-full bg-slate-900/60 border border-white/10 rounded-2xl p-3 mb-5 text-center text-xs font-bold text-slate-400">
+                ⏱️ Time’s Up! Nobody guessed the track within 10 seconds.
+              </div>
+            )
+          ) : (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#00E575]/10 text-[#00E575] text-xs font-bold uppercase tracking-wider mb-4 border border-[#00E575]/20">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Round {room.currentRound} Results</span>
+            </div>
+          )}
 
           {/* Song Cover & Details */}
           <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden shadow-2xl border border-white/10 mb-4 bg-slate-900 flex items-center justify-center">
@@ -397,8 +583,94 @@ export default function MultiplayerArena({
             )}
           </div>
         </div>
+      ) : isFastestFinger ? (
+        /* ========================================================================= */
+        /* FASTEST FINGER FIRST LIVE RACE INTERFACE                                  */
+        /* ========================================================================= */
+        <div className="w-full max-w-xl mx-auto flex flex-col items-center justify-center gap-4 my-auto">
+          {/* 10-Second Live Radial / Bar Timer */}
+          <div className="w-full bg-[#111714] border border-white/10 rounded-3xl p-5 shadow-2xl flex flex-col items-center gap-3">
+            <div className="w-full flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
+                <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
+                <span>FASTEST FINGER RACE</span>
+              </div>
+              <div
+                className={`font-mono font-black text-lg ${
+                  fffTimeRemaining <= 3.0
+                    ? 'text-rose-400 animate-pulse'
+                    : fffTimeRemaining <= 6.0
+                    ? 'text-amber-400'
+                    : 'text-[#00E575]'
+                }`}
+              >
+                {fffTimeRemaining.toFixed(1)}s
+              </div>
+            </div>
+
+            {/* Progress Track Bar */}
+            <div className="w-full h-3.5 bg-black/60 rounded-full overflow-hidden p-0.5 border border-white/5">
+              <div
+                className={`h-full rounded-full transition-all duration-100 ${
+                  fffTimeRemaining <= 3.0
+                    ? 'bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.6)]'
+                    : fffTimeRemaining <= 6.0
+                    ? 'bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]'
+                    : 'bg-[#00E575] shadow-[0_0_15px_rgba(0,229,117,0.5)]'
+                }`}
+                style={{ width: `${(fffTimeRemaining / 10.0) * 100}%` }}
+              />
+            </div>
+
+            <p className="text-[11px] text-slate-400 font-medium">
+              First correct answer takes all the points! Time is ticking...
+            </p>
+          </div>
+
+          {/* Audio Player (Continuous 10s playback) */}
+          <div className="w-full flex items-center justify-center my-2">
+            <AudioPlayer
+              ref={audioPlayerRef}
+              song={currentSong}
+              maxPlayTimeSec={10.0}
+              autoPlay={syncGateRemaining === null}
+              onAudioProgress={setCurrentAudioProgressTime}
+              onPlayStateChange={setIsPlayingAudio}
+              onError={handleSkip}
+            />
+          </div>
+
+          {/* Lockout indicator or Search Bar */}
+          {lockoutRemainingSec > 0 ? (
+            <div className="w-full bg-rose-950/40 border border-rose-500/40 rounded-3xl p-5 flex items-center justify-center gap-3 text-rose-300 font-bold text-sm shadow-lg animate-pulse">
+              <AlertTriangle className="w-5 h-5 text-rose-400" />
+              <span>Incorrect! Locked out for {lockoutRemainingSec.toFixed(1)}s</span>
+            </div>
+          ) : hasUserGuessed ? (
+            <div className="w-full bg-[#111714] border border-[#00E575]/30 rounded-3xl p-6 flex flex-col items-center text-center shadow-[0_0_25px_rgba(0,229,117,0.1)]">
+              <div className="w-12 h-12 rounded-full bg-[#00E575]/10 border border-[#00E575]/30 flex items-center justify-center text-[#00E575] mb-3">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-white mb-1">Guess Submitted!</h3>
+              <p className="text-xs text-slate-400">Waiting for round conclusion...</p>
+            </div>
+          ) : (
+            <div className="w-full flex flex-col items-center gap-3">
+              <SongSearchBar
+                onSelectGuess={handleSelectGuess}
+                onSkipRound={handleSkip}
+                skipButtonLabel="Pass / Give Up (+0 pts)"
+                disabled={hasUserGuessed || syncGateRemaining !== null}
+                isWrongAttemptFlash={isWrongAttemptFlash}
+                roundNumber={room.currentRound}
+              />
+            </div>
+          )}
+        </div>
       ) : (
-        /* Active Guessing Interface */
+        /* ========================================================================= */
+        /* CLASSIC STAGES INTERFACE                                                  */
+        /* ========================================================================= */
         <div className="w-full max-w-xl mx-auto flex flex-col items-center justify-center gap-4 my-auto">
           {/* Difficulty Pills */}
           <div className="w-full flex flex-col items-center gap-2">
@@ -524,3 +796,4 @@ export default function MultiplayerArena({
     </div>
   );
 }
+

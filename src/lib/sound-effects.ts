@@ -155,6 +155,59 @@ class SoundFXEngine {
     osc.start(now);
     osc.stop(now + 0.22);
   }
+
+  // High-energy countdown beep (low tone for 3,2,1 and high tone for GO!)
+  public playCountdownBeep(isFinal: boolean = false): void {
+    if (this.isMuted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = isFinal ? 'triangle' : 'sine';
+    osc.frequency.setValueAtTime(isFinal ? 880 : 440, now); // A5 for GO!, A4 for 3,2,1
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(isFinal ? 0.25 : 0.15, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + (isFinal ? 0.4 : 0.2));
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + (isFinal ? 0.45 : 0.25));
+  }
+
+  // Celebratory snatch sound when fastest finger wins the round
+  public playSnatch(): void {
+    if (this.isMuted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const freqs = [440, 554.37, 659.25, 880, 1108.73]; // A Major arpeggio fast sweep
+
+    freqs.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.04);
+
+      gain.gain.setValueAtTime(0.001, now + idx * 0.04);
+      gain.gain.linearRampToValueAtTime(0.2, now + idx * 0.04 + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.25);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now + idx * 0.04);
+      osc.stop(now + idx * 0.04 + 0.3);
+    });
+  }
 }
 
 export const soundFX = new SoundFXEngine();
+

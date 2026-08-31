@@ -46,3 +46,28 @@ export function calculateStageScore(
     finalScore,
   };
 }
+
+/**
+ * Calculate Fastest Finger First score:
+ * Base score decays from 1,000 pts down to 100 pts over the 10-second duration.
+ * Score is then boosted by the player's consecutive streak multiplier.
+ */
+export function calculateFastestFingerScore(
+  elapsedSeconds: number,
+  streak: number
+): { baseScore: number; multiplier: number; finalScore: number; responseTime: number } {
+  const safeElapsed = Math.min(10.0, Math.max(0, elapsedSeconds));
+  // Linear decay: 1000 at 0s down to 100 at 10s
+  const decayRatio = Math.max(0, 1 - safeElapsed / 10.0);
+  const baseScore = Math.max(100, Math.round(100 + 900 * decayRatio));
+  const multiplier = getStreakMultiplier(streak);
+  const finalScore = Math.round(baseScore * multiplier);
+
+  return {
+    baseScore,
+    multiplier,
+    finalScore,
+    responseTime: Number(safeElapsed.toFixed(2)),
+  };
+}
+

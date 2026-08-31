@@ -123,10 +123,12 @@ export interface Database {
           code: string
           host_id: string
           status: string
+          game_mode: string
           era_filter: string
           current_round: number
           total_rounds: number
           playlist: Json
+          round_start_time: number | null
           created_at: string
           updated_at: string
         }
@@ -135,10 +137,12 @@ export interface Database {
           code: string
           host_id: string
           status?: string
+          game_mode?: string
           era_filter?: string
           current_round?: number
           total_rounds?: number
           playlist: Json
+          round_start_time?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -147,10 +151,12 @@ export interface Database {
           code?: string
           host_id?: string
           status?: string
+          game_mode?: string
           era_filter?: string
           current_round?: number
           total_rounds?: number
           playlist?: Json
+          round_start_time?: number | null
           created_at?: string
           updated_at?: string
         }

@@ -99,6 +99,8 @@ export interface LeaderboardEntry {
 // MULTIPLAYER DATA CONTRACTS
 // ==========================================
 
+export type MultiplayerGameMode = 'classic' | 'fastest_finger';
+
 export type RoomStatus = 'lobby' | 'playing' | 'revealing' | 'finished';
 
 export interface RoomPlayer {
@@ -128,6 +130,8 @@ export interface PlayerRoundGuess {
   scoreAwarded: number;
   guessTitle?: string;
   guessedAt: string;
+  guessTimeSeconds?: number;
+  isFastestFingerWinner?: boolean;
 }
 
 export interface MultiplayerRoom {
@@ -135,12 +139,15 @@ export interface MultiplayerRoom {
   code: string;
   hostId: string;
   status: RoomStatus;
+  gameMode?: MultiplayerGameMode;
   eraFilter: BollywoodEra;
   currentRound: number;
   totalRounds: number;
   playlist: Song[];
   players: RoomPlayer[];
   currentRoundGuesses: Record<string, PlayerRoundGuess>; // Keyed by userId
+  roundStartTime?: number; // Epoch timestamp (ms) when 3-2-1 ends and 10s race starts
   createdAt: string;
   updatedAt: string;
 }
+

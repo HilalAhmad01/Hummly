@@ -2,6 +2,7 @@ import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { CURATED_BOLLYWOOD_SONGS } from '@/lib/mock-data';
 import {
   BollywoodEra,
+  MultiplayerGameMode,
   MultiplayerRoom,
   RoomPlayer,
   PlayerRoundGuess,
@@ -211,12 +212,14 @@ export async function fetchRoomByCode(roomCode: string): Promise<MultiplayerRoom
           code: dbRoom.code,
           hostId: dbRoom.host_id,
           status: computedStatus,
+          gameMode: (dbRoom.game_mode as MultiplayerGameMode) || 'classic',
           eraFilter: dbRoom.era_filter as BollywoodEra,
           currentRound: dbRoom.current_round,
           totalRounds: dbRoom.total_rounds,
           playlist: (dbRoom.playlist as unknown as Song[]) || [],
           players: mappedPlayers,
           currentRoundGuesses: guessMap,
+          roundStartTime: dbRoom.round_start_time ? Number(dbRoom.round_start_time) : undefined,
           createdAt: dbRoom.created_at,
           updatedAt: dbRoom.updated_at,
         };
@@ -240,11 +243,13 @@ export async function fetchRoomByCode(roomCode: string): Promise<MultiplayerRoom
 export interface CreateRoomParams {
   hostUser: { id: string; email?: string; username: string; avatarUrl?: string };
   era: BollywoodEra;
+  gameMode?: MultiplayerGameMode;
 }
 
 export async function createMultiplayerRoom({
   hostUser,
   era,
+  gameMode = 'classic',
 }: CreateRoomParams): Promise<{ room: MultiplayerRoom | null; error: string | null }> {
   const code = generateRoomCode();
   const playlist = pickMultiplayerPlaylist(era);
@@ -273,6 +278,7 @@ export async function createMultiplayerRoom({
     code,
     hostId: hostUser.id,
     status: 'lobby',
+    gameMode,
     eraFilter: era,
     currentRound: 1,
     totalRounds: TOTAL_ROUNDS,
@@ -292,6 +298,7 @@ export async function createMultiplayerRoom({
           code,
           host_id: hostUser.id,
           status: 'lobby',
+          game_mode: gameMode,
           era_filter: era,
           current_round: 1,
           total_rounds: TOTAL_ROUNDS,
@@ -512,10 +519,14 @@ export function togglePlayerReadyState(room: MultiplayerRoom, userId: string): M
 
 export async function startMultiplayerGame(room: MultiplayerRoom): Promise<MultiplayerRoom> {
   const now = new Date().toISOString();
+  // If fastest_finger mode, start audio & timer strictly 3s in future for synchronized pre-buffering gate
+  const roundStartTime = room.gameMode === 'fastest_finger' ? Date.now() + 3000 : undefined;
+
   const updated: MultiplayerRoom = {
     ...room,
     status: 'playing',
     currentRound: 1,
+    roundStartTime,
     currentRoundGuesses: {},
     players: room.players.map((p) => ({
       ...p,
@@ -530,7 +541,12 @@ export async function startMultiplayerGame(room: MultiplayerRoom): Promise<Multi
   if (supabase && isSupabaseConfigured) {
     try {
       await (supabase.from('multiplayer_rooms') as any)
-        .update({ status: 'playing', current_round: 1, updated_at: now })
+        .update({
+          status: 'playing',
+          current_round: 1,
+          round_start_time: roundStartTime,
+          updated_at: now,
+        })
         .eq('id', room.id);
 
       // Clean up previous guesses
@@ -553,6 +569,7 @@ export interface SubmitGuessParams {
   isCorrect: boolean;
   scoreAwarded: number;
   guessTitle: string;
+  guessTimeSeconds?: number;
 }
 
 export function submitMultiplayerGuess({
@@ -562,9 +579,13 @@ export function submitMultiplayerGuess({
   isCorrect,
   scoreAwarded,
   guessTitle,
+  guessTimeSeconds,
 }: SubmitGuessParams): MultiplayerRoom {
   const player = room.players.find((p) => p.userId === userId);
   if (!player) return room;
+
+  const isFastestFinger = room.gameMode === 'fastest_finger';
+  const isWinner = isFastestFinger && isCorrect;
 
   const guess: PlayerRoundGuess = {
     userId,
@@ -575,6 +596,8 @@ export function submitMultiplayerGuess({
     scoreAwarded,
     guessTitle,
     guessedAt: new Date().toISOString(),
+    guessTimeSeconds,
+    isFastestFingerWinner: isWinner,
   };
 
   const newGuesses = {
@@ -595,7 +618,7 @@ export function submitMultiplayerGuess({
         correctCount: newCorrectCount,
         currentStreak: newStreak,
         maxStreak: newMaxStreak,
-        roundStatus: (isCorrect ? 'guessed' : 'skipped') as 'guessed' | 'skipped',
+        roundStatus: (isCorrect ? 'guessed' : (isFastestFinger ? 'thinking' : 'skipped')) as 'thinking' | 'guessed' | 'skipped',
         lastGuessCorrect: isCorrect,
         lastRoundScore: scoreAwarded,
       };
@@ -603,10 +626,20 @@ export function submitMultiplayerGuess({
     return p;
   });
 
-  // Check if ALL active players in the room have guessed
-  const allGuessed = updatedPlayers.every((p) => Boolean(newGuesses[p.userId]));
-
-  const nextStatus: RoomStatus = allGuessed ? 'revealing' : 'playing';
+  // In Fastest Finger First, the first correct guess immediately ends the round for everyone
+  let nextStatus: RoomStatus = 'playing';
+  if (isFastestFinger) {
+    if (isCorrect) {
+      nextStatus = 'revealing';
+    } else {
+      // In FFF, wrong guess keeps the room playing so others (and player after cooldown) can continue
+      nextStatus = 'playing';
+    }
+  } else {
+    // In Classic mode, wait for all players
+    const allGuessed = updatedPlayers.every((p) => Boolean(newGuesses[p.userId]));
+    nextStatus = allGuessed ? 'revealing' : 'playing';
+  }
 
   const updatedRoom: MultiplayerRoom = {
     ...room,
@@ -641,7 +674,7 @@ export function submitMultiplayerGuess({
       .eq('user_id', userId)
       .then();
 
-    if (allGuessed) {
+    if (nextStatus === 'revealing') {
       (supabase.from('multiplayer_rooms') as any)
         .update({ status: 'revealing' })
         .eq('id', room.id)
@@ -654,6 +687,24 @@ export function submitMultiplayerGuess({
 }
 
 export function forceRevealMultiplayerRound(room: MultiplayerRoom): MultiplayerRoom {
+  const updatedRoom: MultiplayerRoom = {
+    ...room,
+    status: 'revealing',
+  };
+
+  const supabase = createClient();
+  if (supabase && isSupabaseConfigured) {
+    (supabase.from('multiplayer_rooms') as any)
+      .update({ status: 'revealing' })
+      .eq('id', room.id)
+      .then();
+  }
+
+  broadcastRoomState(updatedRoom);
+  return updatedRoom;
+}
+
+export function timeoutFastestFingerRound(room: MultiplayerRoom): MultiplayerRoom {
   const updatedRoom: MultiplayerRoom = {
     ...room,
     status: 'revealing',
@@ -695,10 +746,13 @@ export function advanceToNextMultiplayerRound(room: MultiplayerRoom): Multiplaye
     return finishedRoom;
   }
 
+  const roundStartTime = room.gameMode === 'fastest_finger' ? Date.now() + 3000 : undefined;
+
   const nextRoom: MultiplayerRoom = {
     ...room,
     status: 'playing',
     currentRound: nextRoundNumber,
+    roundStartTime,
     currentRoundGuesses: {},
     players: room.players.map((p) => ({
       ...p,
@@ -715,6 +769,7 @@ export function advanceToNextMultiplayerRound(room: MultiplayerRoom): Multiplaye
       .update({
         current_round: nextRoundNumber,
         status: 'playing',
+        round_start_time: roundStartTime,
         updated_at: now,
       })
       .eq('id', room.id)

@@ -16,7 +16,7 @@ import {
   ArrowRight,
   ShieldCheck,
 } from 'lucide-react';
-import { BollywoodEra, MultiplayerRoom } from '@/types/game';
+import { BollywoodEra, MultiplayerGameMode, MultiplayerRoom } from '@/types/game';
 import {
   createMultiplayerRoom,
   joinMultiplayerRoom,
@@ -47,6 +47,25 @@ const ERA_OPTIONS: { id: BollywoodEra; label: string; icon: string; desc: string
   { id: 'romance', label: 'Romantic Melodies', icon: '💖', desc: 'Soulful love ballads & acoustic tunes' },
 ];
 
+const GAME_MODE_OPTIONS: { id: MultiplayerGameMode; title: string; subtitle: string; icon: string; badge: string; badgeColor: string }[] = [
+  {
+    id: 'classic',
+    title: 'Classic Stages',
+    subtitle: '5 progressive snippet lengths (0.2s → 10s). Play at your own pace.',
+    icon: '🎯',
+    badge: 'Relaxed & Tactical',
+    badgeColor: 'bg-emerald-500/10 text-[#00E575] border-[#00E575]/20',
+  },
+  {
+    id: 'fastest_finger',
+    title: 'Fastest Finger First',
+    subtitle: '10s live race! First correct guess wins the round & takes all the points.',
+    icon: '⚡',
+    badge: 'High Stakes & Speed',
+    badgeColor: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  },
+];
+
 function MultiplayerContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -63,6 +82,7 @@ function MultiplayerContent() {
   // View state
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [selectedEra, setSelectedEra] = useState<BollywoodEra>('all');
+  const [selectedGameMode, setSelectedGameMode] = useState<MultiplayerGameMode>('fastest_finger');
   const [inputCode, setInputCode] = useState<string>(roomQueryCode || '');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -169,6 +189,7 @@ function MultiplayerContent() {
     const { room, error } = await createMultiplayerRoom({
       hostUser: currentUser,
       era: selectedEra,
+      gameMode: selectedGameMode,
     });
 
     if (error || !room) {
@@ -234,7 +255,8 @@ function MultiplayerContent() {
     stageIndex: number,
     isCorrect: boolean,
     scoreAwarded: number,
-    guessTitle: string
+    guessTitle: string,
+    guessTimeSeconds?: number
   ) => {
     if (!activeRoom || !currentUser) return;
     const updated = submitMultiplayerGuess({
@@ -244,9 +266,11 @@ function MultiplayerContent() {
       isCorrect,
       scoreAwarded,
       guessTitle,
+      guessTimeSeconds,
     });
     setActiveRoom(updated);
   };
+
 
   // Handler: Advance Round
   const handleAdvanceRound = () => {
@@ -422,7 +446,55 @@ function MultiplayerContent() {
 
       {/* Tab 1: Host Room */}
       {mode === 'create' ? (
-        <div className="w-full bg-[#111714] border border-white/5 rounded-3xl p-5 sm:p-6 flex flex-col gap-5">
+        <div className="w-full bg-[#111714] border border-white/5 rounded-3xl p-5 sm:p-6 flex flex-col gap-6">
+          {/* Game Mode Selection */}
+          <div>
+            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2.5">
+              Select Game Mode
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {GAME_MODE_OPTIONS.map((item) => {
+                const isSelected = selectedGameMode === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSelectedGameMode(item.id)}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
+                      isSelected
+                        ? item.id === 'fastest_finger'
+                          ? 'bg-[#18231E] border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.18)]'
+                          : 'bg-[#18231E] border-[#00E575] shadow-[0_0_20px_rgba(0,229,117,0.18)]'
+                        : 'bg-[#131B17] border-white/5 hover:border-white/15'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">{item.icon}</span>
+                        <span
+                          className={`text-sm font-black ${
+                            isSelected
+                              ? item.id === 'fastest_finger'
+                                ? 'text-amber-400'
+                                : 'text-[#00E575]'
+                              : 'text-white'
+                          }`}
+                        >
+                          {item.title}
+                        </span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${item.badgeColor}`}>
+                        {item.badge}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed">{item.subtitle}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Era Selection */}
           <div>
             <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">
               Select Bollywood Era / Category

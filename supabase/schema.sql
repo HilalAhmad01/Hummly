@@ -149,10 +149,12 @@ create table if not exists public.multiplayer_rooms (
   code text unique not null,
   host_id uuid references public.profiles(id) on delete cascade not null,
   status text not null default 'lobby', -- 'lobby' | 'playing' | 'revealing' | 'finished'
+  game_mode text not null default 'classic', -- 'classic' | 'fastest_finger'
   era_filter text not null default 'all',
   current_round integer not null default 1,
   total_rounds integer not null default 10,
   playlist jsonb not null default '[]'::jsonb,
+  round_start_time bigint, -- Synchronized epoch timestamp for Fastest Finger countdown
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

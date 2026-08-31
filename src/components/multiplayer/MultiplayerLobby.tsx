@@ -137,6 +137,15 @@ export default function MultiplayerLobby({
           <span className="text-xs font-medium text-slate-400">
             Era: <strong className="text-white">{ERA_LABELS[room.eraFilter]}</strong>
           </span>
+
+          <span className="text-xs text-slate-500">•</span>
+
+          <span className="text-xs font-medium text-slate-400 flex items-center gap-1">
+            Mode:{' '}
+            <strong className={`font-bold ${room.gameMode === 'fastest_finger' ? 'text-amber-400' : 'text-[#00E575]'}`}>
+              {room.gameMode === 'fastest_finger' ? '⚡ Fastest Finger First (10s)' : '🎯 Classic Stages'}
+            </strong>
+          </span>
         </div>
       </div>
 
